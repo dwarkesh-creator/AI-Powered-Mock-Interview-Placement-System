@@ -1,0 +1,67 @@
+[
+  {
+    "question": "What is the difference between a list and a tuple in Python?",
+    "answer": "A list is mutable, meaning its elements can be changed after creation, while a tuple is immutable and cannot be modified once created. Lists use square brackets and tuples use parentheses. Because tuples are immutable, they are generally faster and can be used as dictionary keys, whereas lists cannot.",
+    "keypoints": ["mutable", "immutable", "square brackets", "parentheses", "dictionary keys"]
+  },
+  {
+    "question": "Explain the concept of Object-Oriented Programming.",
+    "answer": "Object-Oriented Programming is a programming paradigm based on the concept of objects, which bundle data and behavior together. The four main principles are encapsulation, inheritance, polymorphism, and abstraction. Encapsulation hides internal state, inheritance allows classes to reuse code from parent classes, polymorphism lets objects be treated as instances of their parent class, and abstraction hides complex implementation details.",
+    "keypoints": ["encapsulation", "inheritance", "polymorphism", "abstraction", "objects"]
+  },
+  {
+    "question": "What is a REST API?",
+    "answer": "A REST API is an architectural style for designing networked applications. It uses stateless communication and standard HTTP methods like GET, POST, PUT, and DELETE to manipulate resources, which are identified by URLs. REST APIs typically exchange data in JSON format.",
+    "keypoints": ["stateless", "http methods", "resources", "url", "json"]
+  },
+  {
+    "question": "What is Big O notation?",
+    "answer": "Big O notation describes the upper bound of an algorithm's time or space complexity as the input size grows. It helps compare the efficiency of algorithms independent of hardware, focusing on how runtime scales with input size, such as O(1), O(log n), O(n), or O(n^2).",
+    "keypoints": ["time complexity", "space complexity", "upper bound", "input size", "scalability"]
+  },
+  {
+    "question": "What is the difference between SQL joins?",
+    "answer": "An inner join returns only rows with matching values in both tables. A left join returns all rows from the left table and matched rows from the right table, filling unmatched columns with null. A right join is the opposite, and a full outer join returns all rows from both tables, matched or not.",
+    "keypoints": ["inner join", "left join", "right join", "full outer join", "null"]
+  },
+  {
+    "question": "Explain the difference between TCP and UDP.",
+    "answer": "TCP is a connection-oriented protocol that guarantees reliable, ordered delivery of data through acknowledgments and retransmission. UDP is connectionless and does not guarantee delivery or order, making it faster but less reliable. TCP is used for things like web browsing and email, while UDP is used for streaming and gaming where speed matters more than reliability.",
+    "keypoints": ["connection-oriented", "connectionless", "reliable", "ordered delivery", "streaming"]
+  },
+  {
+    "question": "How do you handle exceptions in Python?",
+    "answer": "Python uses try, except, else, and finally blocks to handle exceptions. Code that might raise an error is placed in the try block, and the except block catches and handles specific exception types. The finally block runs regardless of whether an exception occurred, often used for cleanup.",
+    "keypoints": ["try", "except", "finally", "exception handling", "cleanup"]
+  },
+  {
+    "question": "What is version control and why is Git useful?",
+    "answer": "Version control tracks changes to code over time, allowing multiple people to collaborate without overwriting each other's work. Git is a distributed version control system that lets developers create branches, commit changes, and merge work, while keeping a full history of the project that can be reverted if needed.",
+    "keypoints": ["version control", "branches", "commit", "merge", "distributed"]
+  },
+  {
+    "question": "What is the testing pyramid?",
+    "answer": "The testing pyramid is a model that suggests writing many fast unit tests at the base, fewer integration tests in the middle, and even fewer slow end-to-end tests at the top. This structure balances test coverage with speed and maintainability, since unit tests are cheap to run while end-to-end tests are expensive and brittle.",
+    "keypoints": ["unit tests", "integration tests", "end-to-end tests", "test coverage", "maintainability"]
+  },
+  {
+    "question": "What are the core values of Agile methodology?",
+    "answer": "Agile emphasizes individuals and interactions over processes and tools, working software over comprehensive documentation, customer collaboration over contract negotiation, and responding to change over following a rigid plan. It relies on iterative development, frequent feedback, and short sprints.",
+    "keypoints": ["iterative development", "customer collaboration", "sprints", "feedback", "responding to change"]
+  },
+  {
+    "question": "What is database indexing and why does it matter?",
+    "answer": "A database index is a data structure that improves the speed of data retrieval operations on a table, at the cost of additional storage and slower writes. Indexes work like a lookup table so the database doesn't have to scan every row, which is especially important for large tables and frequently queried columns.",
+    "keypoints": ["data structure", "retrieval speed", "storage cost", "lookup table", "large tables"]
+  },
+  {
+    "question": "What is a closure in programming?",
+    "answer": "A closure is a function that retains access to variables from its enclosing scope even after that outer function has finished executing. This lets you create functions with private state, and is commonly used for things like callback functions and data encapsulation.",
+    "keypoints": ["enclosing scope", "private state", "callback", "encapsulation", "outer function"]
+  },
+  {
+    "question": "What is a race condition?",
+    "answer": "A race condition occurs when two or more threads or processes access shared data concurrently and the final outcome depends on the timing of their execution. This can lead to unpredictable bugs, and is typically prevented using synchronization mechanisms like locks, mutexes, or atomic operations.",
+    "keypoints": ["shared data", "concurrency", "timing", "locks", "synchronization"]
+  }
+]
