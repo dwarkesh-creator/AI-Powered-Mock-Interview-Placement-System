@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PlaceAI — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #060c1a;
+      --panel: #0d1730;
+      --accent: #3b82f6;
+      --accent2: #06b6d4;
+      --text: #e8edf8;
+      --muted: #6b7fa3;
+      --border: #1a2744;
+      --input-bg: #101c35;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .left {
+      flex: 1;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px;
+      overflow: hidden;
+    }
+
+    .left::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 20% 40%, rgba(59,130,246,0.18) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(6,182,212,0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(59,130,246,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59,130,246,0.06) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.6rem;
+      color: var(--text);
+      margin-bottom: 80px;
+      position: relative;
+    }
+    .logo span { color: var(--accent); }
+
+    .left-content { position: relative; }
+
+    .left-content h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.2rem, 4vw, 3.4rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -1px;
+      margin-bottom: 20px;
+    }
+
+    .left-content h1 .highlight {
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .left-content p {
+      font-size: 1.05rem;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 400px;
+      margin-bottom: 48px;
+    }
+
+    .stats { display: flex; gap: 36px; }
+
+    .stat .num {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .stat .num span { color: var(--accent); }
+    .stat .label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+    .floating-card {
+      position: absolute;
+      bottom: 60px;
+      right: -20px;
+      background: rgba(13,23,48,0.85);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px 22px;
+      backdrop-filter: blur(12px);
+      animation: float 4s ease-in-out infinite;
+      min-width: 220px;
+    }
+    .floating-card .fc-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .floating-card .fc-text { font-size: 0.9rem; font-weight: 500; }
+    .fc-dot { display: inline-block; width: 8px; height: 8px; background: #22c55e; border-radius: 50%; margin-right: 8px; box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite; }
+
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    .right {
+      width: 480px;
+      min-height: 100vh;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 50px;
+      position: relative;
+    }
+
+    .right::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    .form-header { margin-bottom: 40px; }
+    .form-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .form-header p { color: var(--muted); font-size: 0.92rem; }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--input-bg);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 32px;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      border-radius: 7px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--muted);
+    }
+    .tab.active { background: var(--accent); color: white; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+    .form-group input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 16px;
+      font-size: 0.95rem;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+    }
+    .form-group input::placeholder { color: #3a4d6e; }
+
+    .forgot { text-align: right; margin-top: -12px; margin-bottom: 20px; }
+    .forgot a { font-size: 0.82rem; color: var(--accent); text-decoration: none; }
+
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Syne', sans-serif;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1;
+      height: 1px; background: var(--border);
+    }
+
+    .social-btns { display: flex; gap: 10px; }
+    .social-btn {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px;
+      color: var(--text);
+      font-size: 0.88rem;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: border-color 0.2s;
+    }
+    .social-btn:hover { border-color: var(--accent); }
+
+    .register-note {
+      text-align: center;
+      margin-top: 28px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .register-note a { color: var(--accent); text-decoration: none; font-weight: 500; }
+
+    #signup-form { display: none; }
+
+    @media (max-width: 900px) {
+      .left { display: none; }
+      .right { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="left">
+    <div class="grid-bg"></div>
+    <div class="logo">Place<span>AI</span></div>
+    <div class="left-content">
+      <h1>Your <span class="highlight">AI-Powered</span><br/>Placement<br/>Journey Starts</h1>
+      <p>Practice real interview questions tailored to your resume and dream role. Get placed faster with AI feedback.</p>
+      <div class="stats">
+        <div class="stat">
+          <div class="num">12<span>K+</span></div>
+          <div class="label">Students Placed</div>
+        </div>
+        <div class="stat">
+          <div class="num">95<span>%</span></div>
+          <div class="label">Success Rate</div>
+        </div>
+        <div class="stat">
+          <div class="num">200<span>+</span></div>
+          <div class="label">Companies</div>
+        </div>
+      </div>
+    </div>
+    <div class="floating-card">
+      <div class="fc-label">Live Session</div>
+      <div class="fc-text"><span class="fc-dot"></span>AI Interview in Progress</div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="form-header">
+      <h2>Welcome Back 👋</h2>
+      <p>Sign in to your placement portal account</p>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('login')">Login</div>
+      <div class="tab" onclick="switchTab('signup')">Sign Up</div>
+    </div>
+
+    <div id="login-form">
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="login-email" placeholder="you@college.edu" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••" />
+      </div>
+      <div class="forgot"><a href="#">Forgot password?</a></div>
+      <button class="btn-login" onclick="doLogin()">Sign In →</button>
+      <div class="divider">or continue with</div>
+      <div class="social-btns">
+        <button class="social-btn">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.4 30.2 0 24 0 14.7 0 6.8 5.5 3 13.4l7.8 6C12.7 13.1 17.9 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8C43.7 37.7 46.5 31.5 46.5 24.5z"/>
+            <path fill="#FBBC05" d="M10.8 28.6A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.2.7-4.6L2.4 13.4A23.8 23.8 0 0 0 0 24c0 3.8.9 7.4 2.5 10.6l8.3-6z"/>
+            <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.2-7.7 2.2-6.1 0-11.3-3.7-13.2-9l-7.8 6C6.8 42.5 14.7 48 24 48z"/>
+          </svg>
+          Google
+        </button>
+        <button class="social-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#0A66C2">
+            <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM9 17H6.5v-7H9v7zm-1.25-8.25A1.375 1.375 0 1 1 9.125 7.375 1.375 1.375 0 0 1 7.75 8.75zM18 17h-2.5v-3.5c0-.96-.02-2.2-1.34-2.2-1.34 0-1.55 1.05-1.55 2.13V17H10v-7h2.4v.96h.03a2.63 2.63 0 0 1 2.37-1.3c2.54 0 3.01 1.67 3.01 3.84V17z"/>
+          </svg>
+          LinkedIn
+        </button>
+      </div>
+    </div>
+
+    <div id="signup-form">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" placeholder="John Doe" />
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" placeholder="you@college.edu" />
+      </div>
+      <div class="form-group">
+        <label>College / University</label>
+        <input type="text" placeholder="e.g. Delhi Technological University" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" placeholder="Create a password" />
+      </div>
+      <button class="btn-login" onclick="window.location.href='dashboard.html'">Create Account →</button>
+    </div>
+
+    <div class="register-note">
+      <span id="note-text">Don't have an account? <a href="#" onclick="switchTab('signup')">Sign up free</a></span>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      if (tab === 'login') {
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('signup-form').style.display = 'none';
+        document.getElementById('note-text').innerHTML = `Don't have an account? <a href="#" onclick="switchTab('signup')">Sign up free</a>`;
+        document.querySelector('.form-header h2').textContent = 'Welcome Back 👋';
+        document.querySelector('.form-header p').textContent = 'Sign in to your placement portal account';
+      } else {
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('signup-form').style.display = 'block';
+        document.getElementById('note-text').innerHTML = `Already have an account? <a href="#" onclick="switchTab('login')">Login</a>`;
+        document.querySelector('.form-header h2').textContent = 'Join PlaceAI 🚀';
+        document.querySelector('.form-header p').textContent = 'Create your free account today';
+      }
+    }
+
+    function doLogin() {
+      const email = document.getElementById('login-email').value;
+      const pass  = document.getElementById('login-pass').value;
+      if (!email || !pass) { alert('Please fill in all fields.'); return; }
+      window.location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PlaceAI — Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #060c1a;
+      --sidebar: #0d1730;
+      --card: #0d1730;
+      --accent: #3b82f6;
+      --accent2: #06b6d4;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --text: #e8edf8;
+      --muted: #6b7fa3;
+      --border: #1a2744;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 28px 20px;
+      position: fixed;
+      height: 100vh;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.5rem;
+      color: var(--text);
+      margin-bottom: 40px;
+      padding: 0 8px;
+    }
+    .logo span { color: var(--accent); }
+
+    .nav-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+      padding: 0 12px;
+      margin-bottom: 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 12px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 2px;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: rgba(59,130,246,0.1); color: var(--text); }
+    .nav-item.active { background: rgba(59,130,246,0.15); color: var(--accent); }
+    .nav-item .icon { font-size: 1.1rem; width: 22px; text-align: center; }
+
+    .sidebar-bottom { margin-top: auto; }
+    .user-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+    .user-info .name { font-size: 0.88rem; font-weight: 600; }
+    .user-info .role { font-size: 0.75rem; color: var(--muted); }
+
+    .main { margin-left: 240px; flex: 1; padding: 36px 40px; }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 36px;
+    }
+    .topbar h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+    .topbar h1 span { color: var(--accent); }
+
+    .badge {
+      background: rgba(34,197,94,0.15);
+      color: var(--green);
+      border: 1px solid rgba(34,197,94,0.3);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .stat-card .s-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+    .stat-card .s-num { font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 700; }
+    .stat-card .s-sub { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+    .s-num.blue { color: var(--accent); }
+    .s-num.green { color: var(--green); }
+    .s-num.yellow { color: var(--yellow); }
+
+    .section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 28px;
+      cursor: pointer;
+      transition: all 0.25s;
+      text-decoration: none;
+      color: var(--text);
+      display: block;
+    }
+    .feature-card:hover { transform: translateY(-4px); }
+
+    .feature-card.hero-card {
+      background: linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%);
+      border-color: rgba(59,130,246,0.4);
+    }
+    .feature-card.hero-card:hover { box-shadow: 0 20px 60px rgba(59,130,246,0.3); border-color: var(--accent); }
+    .feature-card.card-resume:hover { border-color: rgba(245,158,11,0.5); box-shadow: 0 16px 40px rgba(245,158,11,0.12); }
+    .feature-card.card-company:hover { border-color: rgba(34,197,94,0.5); box-shadow: 0 16px 40px rgba(34,197,94,0.12); }
+
+    .card-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+      margin-bottom: 18px;
+    }
+    .icon-ai    { background: rgba(59,130,246,0.25); }
+    .icon-resume{ background: rgba(245,158,11,0.15); }
+    .icon-company{background: rgba(34,197,94,0.15); }
+
+    .card-tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      background: rgba(59,130,246,0.25);
+      color: var(--accent2);
+    }
+
+    .feature-card h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .hero-card p { color: rgba(186,230,253,0.75); }
+
+    .card-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--accent);
+      transition: gap 0.2s;
+    }
+    .hero-card .card-cta { color: #93c5fd; }
+    .feature-card:hover .card-cta { gap: 10px; }
+
+    .bottom-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .recent-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .session-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .session-item:last-child { border-bottom: none; }
+    .si-title { font-size: 0.9rem; font-weight: 500; }
+    .si-date { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+
+    .score-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .score-high { background: rgba(34,197,94,0.15); color: var(--green); }
+    .score-mid  { background: rgba(245,158,11,0.15); color: var(--yellow); }
+    .score-low  { background: rgba(239,68,68,0.15);  color: var(--red); }
+
+    .upcoming-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .upcoming-item:last-child { border-bottom: none; }
+    .up-icon { font-size: 1.5rem; }
+    .up-title { font-size: 0.9rem; font-weight: 500; }
+    .up-date { font-size: 0.78rem; color: var(--muted); margin-top: 3px; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 20px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .bottom-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="logo">Place<span>AI</span></div>
+
+    <div style="margin-bottom:8px;">
+      <div class="nav-label">Main</div>
+      <a class="nav-item active" href="dashboard.html"><span class="icon">🏠</span> Dashboard</a>
+      <a class="nav-item" href="interview.html"><span class="icon">🤖</span> AI Interview</a>
+      <a class="nav-item" href="#"><span class="icon">📄</span> My Resume</a>
+      <a class="nav-item" href="#"><span class="icon">🏢</span> Companies</a>
+    </div>
+
+    <div style="margin-top:16px;">
+      <div class="nav-label">Progress</div>
+      <a class="nav-item" href="#"><span class="icon">📊</span> Analytics</a>
+      <a class="nav-item" href="#"><span class="icon">🏆</span> Achievements</a>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="nav-item" onclick="window.location.href='login.html'" style="margin-bottom:10px;">
+        <span class="icon">🚪</span> Logout
+      </div>
+      <div class="user-card">
+        <div class="avatar">AR</div>
+        <div class="user-info">
+          <div class="name">Arjun Sharma</div>
+          <div class="role">CS Final Year</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1>Good morning, <span>Arjun</span> 👋</h1>
+        <p style="color:var(--muted);font-size:0.88rem;margin-top:4px;">Here's your placement progress today</p>
+      </div>
+      <div class="badge">🟢 Placement Season Active</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="s-label">Mock Interviews</div>
+        <div class="s-num blue">7</div>
+        <div class="s-sub">+2 this week</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Avg. Score</div>
+        <div class="s-num green">78%</div>
+        <div class="s-sub">↑ 6% from last week</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Applications</div>
+        <div class="s-num yellow">12</div>
+        <div class="s-sub">3 shortlisted</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Streak</div>
+        <div class="s-num" style="color:#f472b6;">5🔥</div>
+        <div class="s-sub">Days in a row</div>
+      </div>
+    </div>
+
+    <div class="section-title">What do you want to do today?</div>
+    <div class="feature-grid">
+
+      <a class="feature-card hero-card" href="interview.html">
+        <div class="card-icon icon-ai">🤖</div>
+        <span class="card-tag">✨ AI Powered</span>
+        <h3>AI Mock Interview</h3>
+        <p>Get personalized interview questions based on your resume and target role. Real-time AI feedback included.</p>
+        <div class="card-cta">Start Interview →</div>
+      </a>
+
+      <div class="feature-card card-resume">
+        <div class="card-icon icon-resume">📄</div>
+        <span class="card-tag" style="background:rgba(245,158,11,0.15);color:var(--yellow);">Resume</span>
+        <h3>Resume Analyzer</h3>
+        <p>Upload your resume and get an AI-powered score with improvement suggestions for your target role.</p>
+        <div class="card-cta" style="color:var(--yellow);">Analyze Now →</div>
+      </div>
+
+      <div class="feature-card card-company">
+        <div class="card-icon icon-company">🏢</div>
+        <span class="card-tag" style="background:rgba(34,197,94,0.15);color:var(--green);">Explore</span>
+        <h3>Company Research</h3>
+        <p>Browse company profiles, interview patterns, salary ranges, and past interview experiences.</p>
+        <div class="card-cta" style="color:var(--green);">Explore →</div>
+      </div>
+
+    </div>
+
+    <div class="bottom-row">
+      <div class="recent-card">
+        <div class="section-title" style="margin-bottom:8px;">Recent Interview Sessions</div>
+        <div class="session-item">
+          <div><div class="si-title">Software Engineer — Google</div><div class="si-date">2 days ago · 45 mins</div></div>
+          <div class="score-badge score-high">82%</div>
+        </div>
+        <div class="session-item">
+          <div><div class="si-title">Data Scientist — Amazon</div><div class="si-date">5 days ago · 30 mins</div></div>
+          <div class="score-badge score-mid">65%</div>
+        </div>
+        <div class="session-item">
+          <div><div class="si-title">Frontend Dev — Flipkart</div><div class="si-date">1 week ago · 25 mins</div></div>
+          <div class="score-badge score-high">90%</div>
+        </div>
+        <div class="session-item">
+          <div><div class="si-title">Backend Engineer — Razorpay</div><div class="si-date">2 weeks ago · 50 mins</div></div>
+          <div class="score-badge score-low">55%</div>
+        </div>
+      </div>
+
+      <div class="recent-card">
+        <div class="section-title" style="margin-bottom:8px;">Upcoming Drives & Deadlines</div>
+        <div class="upcoming-item">
+          <div class="up-icon">🟦</div>
+          <div><div class="up-title">Microsoft Campus Drive</div><div class="up-date">April 10, 2026 · Register by Apr 8</div></div>
+        </div>
+        <div class="upcoming-item">
+          <div class="up-icon">🟧</div>
+          <div><div class="up-title">Infosys Application Deadline</div><div class="up-date">April 12, 2026</div></div>
+        </div>
+        <div class="upcoming-item">
+          <div class="up-icon">🟩</div>
+          <div><div class="up-title">Google STEP Intern Test</div><div class="up-date">April 15, 2026</div></div>
+        </div>
+        <div class="upcoming-item">
+          <div class="up-icon">🟪</div>
+          <div><div class="up-title">Resume Workshop — Career Cell</div><div class="up-date">April 9, 2026 · 3:00 PM</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
