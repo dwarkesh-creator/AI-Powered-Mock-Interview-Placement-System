@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+venv/
+.venv/
+
+# Not committing a bundled photo of a real person to a public portfolio repo.
+# Drop any clear face photo here locally (a webcam selfie is fine) to
+# exercise the end-to-end tests in test_vision_analyzer.py -- they skip
+# gracefully if it's missing.
+test_face.jpg
