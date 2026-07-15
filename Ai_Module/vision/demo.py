@@ -30,6 +30,7 @@ def run_webcam(analyzer: VisionAnalyzer) -> None:
 
         result = analyzer.analyze_frame(frame)
         if result.face_found:
+            assert result.box is not None and result.dominant_emotion is not None  # guaranteed together by analyze_frame() when face_found=True
             x, y, w, h = result.box
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 200, 0), 2)
             top_label = f"{result.dominant_emotion} {result.emotions[result.dominant_emotion] * 100:.0f}%"

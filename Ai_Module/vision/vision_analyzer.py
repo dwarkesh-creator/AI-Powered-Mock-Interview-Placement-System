@@ -69,13 +69,60 @@ def compute_confidence_score(avg_emotions: Dict[str, float], presence_rate: floa
     return round(min(100, max(0, score)))
 
 
+def quantize_input(face_float: np.ndarray, input_detail: dict) -> np.ndarray:
+    """Convert a float32, [-1, 1]-normalized face image into whatever dtype
+    the TFLite model actually expects.
+
+    Quantized models (dtype uint8/int8) store an int approximation of a
+    real value: real = (quantized - zero_point) * scale. To go the other
+    way -- real value in, quantized value out -- invert that:
+        quantized = real / scale + zero_point
+    Float models (dtype float32) need no conversion at all.
+
+    Pulled out as a standalone, pure function (no camera/model required)
+    so it's unit-testable on its own, the same way compute_confidence_score
+    is above.
+    """
+    dtype = input_detail["dtype"]
+    if dtype in (np.uint8, np.int8):
+        scale, zero_point = input_detail["quantization"]
+        if scale == 0:  # (0.0, 0) means "no quantization info", treat as raw
+            return face_float.astype(dtype)
+        quantized = np.round(face_float / scale + zero_point)
+        # Clip to the dtype's representable range before casting. Without
+        # this, any input that lands even slightly outside what the model
+        # was calibrated for (lighting, exposure, upstream preprocessing
+        # drift...) silently wraps around -- e.g. -25.6 becomes 231, not 0 --
+        # instead of clamping to a valid, if saturated, value.
+        info = np.iinfo(dtype)
+        quantized = np.clip(quantized, info.min, info.max)
+        return quantized.astype(dtype)
+    return face_float.astype(dtype)
+
+
+def dequantize_output(output: np.ndarray, output_detail: dict) -> np.ndarray:
+    """Inverse of quantize_input, applied to the model's output tensor, so
+    the returned scores are always comparable floats regardless of whether
+    the underlying model is quantized.
+    """
+    dtype = output_detail["dtype"]
+    if dtype in (np.uint8, np.int8):
+        scale, zero_point = output_detail["quantization"]
+        if scale != 0:
+            return (output.astype("float32") - zero_point) * scale
+    return output.astype("float32")
+
+
 class VisionAnalyzer:
     """Detects a face in a frame and classifies its emotion, then lets you
     roll many frames up into one session-level confidence score.
     """
 
     def __init__(self, cascade_path: Optional[str] = None, model_path: str = _DEFAULT_MODEL_PATH):
-        cascade_file = cascade_path or os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
+        # cv2.data is a real runtime attribute (the documented way to locate
+        # bundled Haar cascades) but is missing from opencv-python's type
+        # stubs, hence the ignore rather than a real fix.
+        cascade_file = cascade_path or os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")  # type: ignore[attr-defined]
         self.face_detector = cv2.CascadeClassifier(cascade_file)
         if self.face_detector.empty():
             raise RuntimeError(f"Could not load Haar cascade from: {cascade_file}")
@@ -119,17 +166,24 @@ class VisionAnalyzer:
         for label, score in emotions.items():
             self._emotion_totals[label] += score
 
-        dominant = max(emotions, key=emotions.get)
+        dominant = max(emotions, key=lambda label: emotions[label])
         return FrameResult(face_found=True, emotions=emotions, dominant_emotion=dominant, box=(x, y, w, h))
 
     def _classify(self, face_gray: np.ndarray) -> Dict[str, float]:
-        face = cv2.resize(face_gray, (64, 64)).astype("float32")
-        face = (face / 255.0 - 0.5) * 2.0  # normalize to [-1, 1], matches training preprocessing
-        face = face.reshape(1, 64, 64, 1)
+        input_detail = self._input_details[0]
+        _, in_h, in_w, in_c = input_detail["shape"]  # read the model's real expected size
 
-        self.interpreter.set_tensor(self._input_details[0]["index"], face)
+        face = cv2.resize(face_gray, (in_w, in_h)).astype("float32")
+        face = (face / 255.0 - 0.5) * 2.0  # normalize to [-1, 1], matches training preprocessing
+        face = face.reshape(1, in_h, in_w, in_c)
+        face = quantize_input(face, input_detail)
+
+        self.interpreter.set_tensor(input_detail["index"], face)
         self.interpreter.invoke()
-        output = self.interpreter.get_tensor(self._output_details[0]["index"])[0]
+
+        output_detail = self._output_details[0]
+        raw_output = self.interpreter.get_tensor(output_detail["index"])[0]
+        output = dequantize_output(raw_output, output_detail)
 
         return {label: round(float(score), 4) for label, score in zip(EMOTION_LABELS, output)}
 
