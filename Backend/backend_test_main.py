@@ -26,7 +26,7 @@ import main  # noqa: E402
 @pytest.fixture(autouse=True)
 def isolate_state(tmp_path, monkeypatch):
     """Fresh SQLite file + empty in-memory stores for every test."""
-    monkeypatch.setenv("PLACEAI_DB_PATH", str(tmp_path / "test_users.db"))
+    monkeypatch.setenv("NILGEN_DB_PATH", str(tmp_path / "test_users.db"))
     main.SESSIONS_STORE.clear()
     main.TOKENS.clear()
     # Re-run DB init so the temp DB gets the schema

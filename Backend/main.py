@@ -34,11 +34,18 @@ _PROJECT_ROOT = os.path.dirname(_BASE_DIR)
 sys.path.insert(0, os.path.join(_PROJECT_ROOT, "Ai_Module", "NLP"))
 sys.path.insert(0, os.path.join(_PROJECT_ROOT, "Ai_Module", "llm"))
 
-from answer_grader import grade_answer  # noqa: E402  (Ai_Module/NLP/answer_grader.py)
-from feedback_generator import generate_feedback  # noqa: E402  (Ai_Module/llm/feedback_generator.py)
+try:
+    from answer_grader import grade_answer  # type: ignore  # noqa: E402
+except ImportError:
+    grade_answer = None
+
+try:
+    from feedback_generator import generate_feedback  # type: ignore  # noqa: E402
+except ImportError:
+    generate_feedback = None
 
 # ── DB setup ───────────────────────────────────────────────────────────────────
-_DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "Database", "placeai.db")
+_DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "Database", "nilgen.db")
 
 # ── In-memory stores (fast path for sessions & auth tokens in this version) ───
 SESSIONS_STORE: Dict[str, List[Dict[str, Any]]] = {}   # user_id -> [session, ...]
@@ -46,8 +53,8 @@ TOKENS: Dict[str, str] = {}                             # token -> user_id
 
 
 def _get_db_path() -> str:
-    """Read at call time so monkeypatching PLACEAI_DB_PATH in tests works."""
-    return os.environ.get("PLACEAI_DB_PATH", _DEFAULT_DB_PATH)
+    """Read at call time so monkeypatching NILGEN_DB_PATH in tests works."""
+    return os.environ.get("NILGEN_DB_PATH", _DEFAULT_DB_PATH)
 
 
 def _get_db_connection() -> sqlite3.Connection:
@@ -100,7 +107,7 @@ async def lifespan(application: FastAPI):
 
 
 app = FastAPI(
-    title="PlaceAI — Mock Interview API",
+    title="NilGen",
     description="AI-Powered Mock Interview & Placement System backend.",
     version="1.0.0",
     lifespan=lifespan,
@@ -187,7 +194,7 @@ def _generate_token() -> str:
 
 @app.get("/", tags=["health"])
 def health_check():
-    return {"status": "ok", "service": "PlaceAI Backend"}
+    return {"status": "ok", "service": "NilGen Backend"}
 
 
 # ── Auth ───────────────────────────────────────────────────────────────────────
@@ -279,7 +286,9 @@ def get_sessions(user_id: str):
 
 @app.post("/api/grade-answer", response_model=GradeResponse, tags=["ai"])
 def grade_answer_endpoint(body: GradeRequest):
-    result = grade_answer(body.question, body.answer, body.ideal_keypoints)
+    if grade_answer is None:
+        raise HTTPException(status_code=503, detail="Grading service unavailable")
+    result = grade_answer(body.question, body.answer)
     return GradeResponse(
         score=result["score"],
         feedback=result["feedback"],
@@ -292,6 +301,8 @@ def grade_answer_endpoint(body: GradeRequest):
 
 @app.post("/api/feedback", response_model=FeedbackResponse, tags=["ai"])
 def feedback_endpoint(body: FeedbackRequest):
+    if generate_feedback is None:
+        raise HTTPException(status_code=503, detail="Feedback service unavailable")
     feedback_text = generate_feedback(body.transcript, body.scores)
     return FeedbackResponse(feedback=feedback_text)
 
@@ -405,32 +416,44 @@ def _generate_questions_llm(role: str, resume_text: str, num: int) -> List[str]:
     if anthropic_key:
         try:
             import anthropic
+            import json
+            import re
             client = anthropic.Anthropic(api_key=anthropic_key)
             msg = client.messages.create(
                 model=os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5"),
                 max_tokens=800,
                 messages=[{"role": "user", "content": prompt}],
             )
-            import json, re
-            text = "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
-            arr = json.loads(re.search(r"\[.*\]", text, re.DOTALL).group(0))
-            return [str(q) for q in arr[:num]]
+            text = ""
+            for b in msg.content:
+                if hasattr(b, "type") and b.type == "text" and hasattr(b, "text"):
+                    text += b.text
+            if text:
+                match = re.search(r"\[.*\]", text, re.DOTALL)
+                if match:
+                    arr = json.loads(match.group(0))
+                    return [str(q) for q in arr[:num]]
         except Exception:
             pass
 
     if openai_key:
         try:
             from openai import OpenAI
-            import json, re
+            import json
+            import re
             client = OpenAI(api_key=openai_key)
             resp = client.chat.completions.create(
                 model=os.environ.get("OPENAI_MODEL", "gpt-4o-mini"),
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=800,
             )
-            text = resp.choices[0].message.content.strip()
-            arr = json.loads(re.search(r"\[.*\]", text, re.DOTALL).group(0))
-            return [str(q) for q in arr[:num]]
+            content = resp.choices[0].message.content
+            if content:
+                text = content.strip()
+                match = re.search(r"\[.*\]", text, re.DOTALL)
+                if match:
+                    arr = json.loads(match.group(0))
+                    return [str(q) for q in arr[:num]]
         except Exception:
             pass
 

@@ -7,7 +7,12 @@ Uses TF-IDF cosine similarity against a reference bank.
 All tests run offline — zero network, zero cost.
 """
 
-import pytest
+import os
+import sys
+
+_BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_BACKEND_DIR)
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "Ai_Module", "NLP"))
 
 import answer_grader as ag
 
@@ -49,7 +54,7 @@ def test_is_deterministic():
 
 
 def test_none_answer_scores_zero():
-    result = ag.grade_answer(QUESTION, None)
+    result = ag.grade_answer(QUESTION, None)  # type: ignore
     assert result["score"] == 0
 
 
@@ -81,13 +86,13 @@ def test_matched_keypoints_is_list():
 
 def test_custom_keypoints():
     kps = ["slow query", "index", "load-tested"]
-    result = ag.grade_answer(QUESTION, GOOD_ANSWER, ideal_keypoints=kps)
+    result = ag.grade_answer(QUESTION, GOOD_ANSWER, ideal_keypoints=kps)  # type: ignore
     # At least some keypoints should match since they appear in the answer
     assert len(result["matched_keypoints"]) > 0
 
 
 def test_no_keypoints_still_scores():
-    result = ag.grade_answer("What is Python?", "A programming language.", ideal_keypoints=[])
+    result = ag.grade_answer("What is Python?", "A programming language.", ideal_keypoints=[])  # type: ignore
     assert isinstance(result["score"], int)
 
 
@@ -96,8 +101,8 @@ def test_no_keypoints_still_scores():
 # ---------------------------------------------------------------------
 
 def test_reference_bank_loaded():
-    assert isinstance(ag.REFERENCE_BANK, list)
-    assert len(ag.REFERENCE_BANK) > 0
-    for entry in ag.REFERENCE_BANK:
+    assert isinstance(ag.REFERENCE_BANK, list)  # type: ignore
+    assert len(ag.REFERENCE_BANK) > 0  # type: ignore
+    for entry in ag.REFERENCE_BANK:  # type: ignore
         assert "question" in entry
         assert "answer" in entry
