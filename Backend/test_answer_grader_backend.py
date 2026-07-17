@@ -1,10 +1,8 @@
 """
-test_answer_grader.py
+test_answer_grader_backend.py
 ---------------------
-Tests for the NLP answer grader (Ai_Module/NLP/answer_grader.py).
-
-Uses TF-IDF cosine similarity against a reference bank.
-All tests run offline — zero network, zero cost.
+Renamed Backend copy of `test_answer_grader` to avoid pytest collection
+collision with the Ai_Module/NLP test file.
 """
 
 import os
@@ -27,6 +25,7 @@ GOOD_ANSWER = (
 # ---------------------------------------------------------------------
 # Core grading behaviour
 # ---------------------------------------------------------------------
+
 
 def test_returns_score_and_feedback():
     result = ag.grade_answer(QUESTION, GOOD_ANSWER)
@@ -62,6 +61,7 @@ def test_none_answer_scores_zero():
 # Result shape
 # ---------------------------------------------------------------------
 
+
 def test_result_has_expected_keys():
     result = ag.grade_answer(QUESTION, GOOD_ANSWER)
     assert "score" in result
@@ -84,6 +84,7 @@ def test_matched_keypoints_is_list():
 # Custom keypoints
 # ---------------------------------------------------------------------
 
+
 def test_custom_keypoints():
     kps = ["slow query", "index", "load-tested"]
     result = ag.grade_answer(QUESTION, GOOD_ANSWER, ideal_keypoints=kps)  # type: ignore
@@ -99,6 +100,7 @@ def test_no_keypoints_still_scores():
 # ---------------------------------------------------------------------
 # Reference bank
 # ---------------------------------------------------------------------
+
 
 def test_reference_bank_loaded():
     assert isinstance(ag.REFERENCE_BANK, list)  # type: ignore

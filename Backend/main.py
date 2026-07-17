@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional
 try:
     from fastapi import FastAPI, HTTPException, status  # type: ignore
     from fastapi.middleware.cors import CORSMiddleware  # type: ignore
+    from fastapi import UploadFile, File  # type: ignore
 except Exception:  # pragma: no cover - optional dev dependency
     class FastAPI:  # minimal shim for environments without fastapi
         def __init__(self, *args, **kwargs):
@@ -56,6 +57,12 @@ except Exception:  # pragma: no cover - optional dev dependency
 
     class CORSMiddleware:  # noop shim
         pass
+    class UploadFile:  # minimal placeholder for type annotation
+        async def read(self):
+            raise RuntimeError("fastapi not installed")
+
+    def File(*args, **kwargs):
+        return None
 
 try:
     from pydantic import BaseModel, EmailStr, Field  # type: ignore
@@ -74,6 +81,7 @@ _PROJECT_ROOT = os.path.dirname(_BASE_DIR)
 
 sys.path.insert(0, os.path.join(_PROJECT_ROOT, "Ai_Module", "NLP"))
 sys.path.insert(0, os.path.join(_PROJECT_ROOT, "Ai_Module", "llm"))
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "Ai_Module", "vision"))
 
 try:
     from answer_grader import grade_answer  # type: ignore  # noqa: E402
@@ -84,6 +92,19 @@ try:
     from feedback_generator import generate_feedback  # type: ignore  # noqa: E402
 except ImportError:
     generate_feedback = None
+
+try:
+    from vision_analyzer import VisionAnalyzer  # type: ignore  # noqa: E402
+    vision_analyzer = VisionAnalyzer()
+except Exception:
+    vision_analyzer = None
+
+try:
+    import numpy as np  # type: ignore
+    import cv2  # type: ignore
+except Exception:
+    np = None
+    cv2 = None
 
 # ── DB setup ───────────────────────────────────────────────────────────────────
 _DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "Database", "nilgen.db")
@@ -363,6 +384,37 @@ def feedback_endpoint(body: FeedbackRequest):
         raise HTTPException(status_code=503, detail="Feedback service unavailable")
     feedback_text = generate_feedback(body.transcript, body.scores)
     return FeedbackResponse(feedback=feedback_text)
+
+
+@app.post("/api/vision-analyze", tags=["vision"])
+async def vision_analyze_endpoint(file: Optional[UploadFile] = None):
+    """Analyze a single uploaded image and return the vision session summary.
+
+    Accepts an image file (jpg/png). The endpoint reads the bytes, decodes
+    to an OpenCV BGR image, runs a single-frame analysis and returns the
+    summarized session result as JSON.
+    """
+    if vision_analyzer is None:
+        raise HTTPException(status_code=503, detail="Vision analyzer unavailable")
+
+    if file is None:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+
+    if np is None or cv2 is None:
+        raise HTTPException(status_code=500, detail="Server missing opencv/numpy")
+
+    contents = await file.read()
+    arr = np.frombuffer(contents, dtype=np.uint8)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise HTTPException(status_code=400, detail="Invalid image file")
+
+    # analyze the frame and return a session summary
+    _ = vision_analyzer.analyze_frame(img)
+    summary = vision_analyzer.summarize_session()
+    from dataclasses import asdict
+
+    return asdict(summary)
 
 
 # ── Question generation ────────────────────────────────────────────────────────
