@@ -9,8 +9,13 @@ No camera, no .tflite file, no OpenCV/TensorFlow model loading required --
 just numpy and the two pure functions.
 """
 
+import os
+import sys
+
 import numpy as np
 import pytest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from vision_analyzer import quantize_input, dequantize_output, EMOTION_LABELS
 

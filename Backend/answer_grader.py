@@ -85,7 +85,12 @@ def _parse_llm_json(text: str) -> Dict[str, Any]:
 
 
 def _grade_with_anthropic(question: str, answer: str) -> Dict[str, Any]:
-    import anthropic  # imported lazily: not required at all for the fallback path
+    try:
+        import importlib
+
+        anthropic = importlib.import_module("anthropic")
+    except Exception:  # pragma: no cover - optional SDK
+        raise RuntimeError("anthropic package not installed")
 
     client = anthropic.Anthropic()
     model = os.environ.get("ANTHROPIC_MODEL", _DEFAULT_ANTHROPIC_MODEL)
@@ -100,7 +105,12 @@ def _grade_with_anthropic(question: str, answer: str) -> Dict[str, Any]:
 
 
 def _grade_with_openai(question: str, answer: str) -> Dict[str, Any]:
-    import openai  # imported lazily: not required at all for the fallback path
+    try:
+        import importlib
+
+        openai = importlib.import_module("openai")
+    except Exception:  # pragma: no cover - optional SDK
+        raise RuntimeError("openai package not installed")
 
     client = openai.OpenAI()
     model = os.environ.get("OPENAI_MODEL", _DEFAULT_OPENAI_MODEL)

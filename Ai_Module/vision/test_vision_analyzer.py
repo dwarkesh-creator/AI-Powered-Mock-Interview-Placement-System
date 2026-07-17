@@ -14,10 +14,13 @@ Covers three layers on purpose:
 """
 
 import os
+import sys
 
 import cv2
 import numpy as np
 import pytest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from vision_analyzer import VisionAnalyzer, compute_confidence_score
 

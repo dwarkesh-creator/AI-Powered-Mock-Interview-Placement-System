@@ -1,7 +1,7 @@
 """
 vision_analyzer.py
 -------------------
-Standalone facial-emotion analysis module for PlaceAI.
+Standalone facial-emotion analysis module for NilGen.
 
 This is the Python/OpenCV counterpart to the browser-based face-api.js
 pipeline used in Frontend/interview.html. The browser version runs

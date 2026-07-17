@@ -1,7 +1,7 @@
 """
 demo.py
 --------
-Command-line demo for the PlaceAI Vision module.
+Command-line demo for the NilGen Vision module.
 
 Usage:
     python demo.py --webcam            # live demo; press 'q' to stop and see the summary
@@ -40,7 +40,7 @@ def run_webcam(analyzer: VisionAnalyzer) -> None:
             cv2.putText(frame, "no face detected", (20, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 220), 2)
 
-        cv2.imshow("PlaceAI Vision Demo", frame)
+        cv2.imshow("NilGen Vision Demo", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
@@ -78,7 +78,7 @@ def print_summary(summary: SessionSummary) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="PlaceAI Vision module demo")
+    parser = argparse.ArgumentParser(description="NilGen Vision module demo")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--webcam", action="store_true", help="run a live webcam demo")
     group.add_argument("--image", type=str, metavar="PATH", help="analyze a single image file")
