@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 """
 main.py — Backend API Server
 AI-Powered Mock Interview & Placement System

@@ -31,36 +31,28 @@ _SYSTEM_PROMPT = (
 
 _DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-5"
 _DEFAULT_OPENAI_MODEL = "gpt-5.5"
+_DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
 
 _FILLER_WORDS = ("um", "uh", "like", "you know", "sort of", "kind of", "basically")
 
 
 def grade_answer(question: str, answer: str) -> Dict[str, Any]:
-    """
-    Grade a candidate's answer to an interview question.
-
-    Args:
-        question: The interview question that was asked.
-        answer: The candidate's answer text.
-
-    Returns:
-        {"score": int in [0, 100], "feedback": str}
-        Never raises on a missing/failed LLM call or a malformed LLM
-        response; always degrades to the deterministic heuristic instead.
-    """
     if os.environ.get("ANTHROPIC_API_KEY"):
         try:
             return _grade_with_anthropic(question, answer)
-        except Exception as exc:  # pragma: no cover - network/SDK failures
+        except Exception as exc:
             warnings.warn(f"Anthropic grading call failed, falling back: {exc}", RuntimeWarning)
     elif os.environ.get("OPENAI_API_KEY"):
         try:
             return _grade_with_openai(question, answer)
-        except Exception as exc:  # pragma: no cover - network/SDK failures
+        except Exception as exc:
             warnings.warn(f"OpenAI grading call failed, falling back: {exc}", RuntimeWarning)
-
+    elif os.environ.get("GEMINI_API_KEY"):
+        try:
+            return _grade_with_gemini(question, answer)
+        except Exception as exc:
+            warnings.warn(f"Gemini grading call failed, falling back: {exc}", RuntimeWarning)
     return _grade_fallback(question, answer)
-
 
 # ---------------------------------------------------------------------
 # Real LLM paths
@@ -120,6 +112,21 @@ def _grade_with_openai(question: str, answer: str) -> Dict[str, Any]:
         input=_build_prompt(question, answer),
     )
     return _parse_llm_json(response.output_text)
+
+
+def _grade_with_gemini(question: str, answer: str) -> Dict[str, Any]:
+    try:
+        import importlib
+        genai = importlib.import_module("google.generativeai")
+    except Exception:  # pragma: no cover - optional SDK
+        raise RuntimeError("google-generativeai package not installed")
+
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+    model_name = os.environ.get("GEMINI_MODEL", _DEFAULT_GEMINI_MODEL)
+    model = genai.GenerativeModel(model_name, system_instruction=_SYSTEM_PROMPT)
+
+    response = model.generate_content(_build_prompt(question, answer))
+    return _parse_llm_json(response.text)
 
 
 # ---------------------------------------------------------------------
