@@ -1,6 +1,3 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 """
 main.py — Backend API Server
 AI-Powered Mock Interview & Placement System
@@ -24,6 +21,13 @@ import uuid
 from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
+
+
+
 
 try:
     from fastapi import FastAPI, HTTPException, status  # type: ignore
@@ -82,22 +86,24 @@ except Exception:  # pragma: no cover - optional dev dependency
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_BASE_DIR)
 
-sys.path.insert(0, os.path.join(_PROJECT_ROOT, "Ai_Module", "NLP"))
-sys.path.insert(0, os.path.join(_PROJECT_ROOT, "Ai_Module", "llm"))
-sys.path.insert(0, os.path.join(_PROJECT_ROOT, "Ai_Module", "vision"))
+# Run package-qualified imports below.  The server is started from Backend/,
+# so add only the project root instead of individual module directories.  This
+# prevents Ai_Module/NLP/answer_grader.py from shadowing this API's grader.
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
 
 try:
-    from answer_grader import grade_answer  # type: ignore  # noqa: E402
+    from Backend.answer_grader import grade_answer  # type: ignore  # noqa: E402
 except ImportError:
     grade_answer = None
 
 try:
-    from feedback_generator import generate_feedback  # type: ignore  # noqa: E402
+    from Ai_Module.llm.feedback_generator import generate_feedback  # type: ignore  # noqa: E402
 except ImportError:
     generate_feedback = None
 
 try:
-    from vision_analyzer import VisionAnalyzer  # type: ignore  # noqa: E402
+    from Ai_Module.vision.vision_analyzer import VisionAnalyzer  # type: ignore  # noqa: E402
     vision_analyzer = VisionAnalyzer()
 except Exception:
     vision_analyzer = None
@@ -171,7 +177,7 @@ async def lifespan(application: FastAPI):
     yield
 
 
-app = FastAPI(
+app: Any = FastAPI(
     title="NilGen",
     description="AI-Powered Mock Interview & Placement System backend.",
     version="1.0.0",

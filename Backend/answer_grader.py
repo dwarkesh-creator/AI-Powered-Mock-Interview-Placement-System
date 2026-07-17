@@ -31,12 +31,14 @@ _SYSTEM_PROMPT = (
 
 _DEFAULT_ANTHROPIC_MODEL = "claude-sonnet-5"
 _DEFAULT_OPENAI_MODEL = "gpt-5.5"
-_DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+_DEFAULT_GEMINI_MODEL = "gemini-flash-latest"
 
 _FILLER_WORDS = ("um", "uh", "like", "you know", "sort of", "kind of", "basically")
 
 
 def grade_answer(question: str, answer: str) -> Dict[str, Any]:
+    # Provider priority is Anthropic, then OpenAI, then Gemini. If the selected
+    # provider fails, retain the existing deterministic fallback behavior.
     if os.environ.get("ANTHROPIC_API_KEY"):
         try:
             return _grade_with_anthropic(question, answer)
@@ -117,15 +119,25 @@ def _grade_with_openai(question: str, answer: str) -> Dict[str, Any]:
 def _grade_with_gemini(question: str, answer: str) -> Dict[str, Any]:
     try:
         import importlib
-        genai = importlib.import_module("google.generativeai")
-    except Exception:  # pragma: no cover - optional SDK
-        raise RuntimeError("google-generativeai package not installed")
+        genai = importlib.import_module("google.genai")
+        types = importlib.import_module("google.genai.types")
+    except Exception:
+        raise RuntimeError("google-genai package not installed")
 
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+    api_key = (os.environ.get("GEMINI_API_KEY") or "").strip().strip('"').strip("'")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY is empty")
+
     model_name = os.environ.get("GEMINI_MODEL", _DEFAULT_GEMINI_MODEL)
-    model = genai.GenerativeModel(model_name, system_instruction=_SYSTEM_PROMPT)
-
-    response = model.generate_content(_build_prompt(question, answer))
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model=model_name,
+        contents=_build_prompt(question, answer),
+        config=types.GenerateContentConfig(
+            system_instruction=_SYSTEM_PROMPT,
+            max_output_tokens=1024,
+        ),
+    )
     return _parse_llm_json(response.text)
 
 

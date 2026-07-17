@@ -2,6 +2,7 @@
 fastapi>=0.110.0
 uvicorn[standard]>=0.29.0
 pydantic[email]>=2.0.0
+python-multipart>=0.0.9
 
 # ── NLP / ML (Ai_Module/NLP) ───────────────────────────────────────────────────
 scikit-learn>=1.4.0
@@ -14,6 +15,8 @@ tensorflow>=2.16.0
 # ── LLM providers (optional — set API keys in environment) ────────────────────
 anthropic>=0.25.0
 openai>=1.14.0
+google-genai>=1.0.0
+python-dotenv>=1.0.0
 
 # ── Testing ────────────────────────────────────────────────────────────────────
 pytest>=8.0.0
