@@ -20,11 +20,13 @@ import json
 import os
 import re
 import warnings
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 _SYSTEM_PROMPT = (
     "You are grading a candidate's answer to a mock interview question. "
-    "Score the answer from 0 to 100 based on relevance, clarity, and depth. "
+    "Score the answer from 0 to 100 based primarily on relevance, clarity, and depth. "
+    "A supplied visual confidence estimate is a minor, noisy delivery signal only; "
+    "never let it outweigh answer correctness, and mention it briefly only when present. "
     "Respond with ONLY a JSON object, no other text, shaped exactly like: "
     '{"score": <int 0-100>, "feedback": "<one or two sentence critique>"}'
 )
@@ -36,22 +38,24 @@ _DEFAULT_GEMINI_MODEL = "gemini-flash-latest"
 _FILLER_WORDS = ("um", "uh", "like", "you know", "sort of", "kind of", "basically")
 
 
-def grade_answer(question: str, answer: str) -> Dict[str, Any]:
+def grade_answer(
+    question: str, answer: str, visual_confidence: Optional[float] = None,
+) -> Dict[str, Any]:
     # Provider priority is Anthropic, then OpenAI, then Gemini. If the selected
     # provider fails, retain the existing deterministic fallback behavior.
     if os.environ.get("ANTHROPIC_API_KEY"):
         try:
-            return _grade_with_anthropic(question, answer)
+            return _grade_with_anthropic(question, answer, visual_confidence)
         except Exception as exc:
             warnings.warn(f"Anthropic grading call failed, falling back: {exc}", RuntimeWarning)
     elif os.environ.get("OPENAI_API_KEY"):
         try:
-            return _grade_with_openai(question, answer)
+            return _grade_with_openai(question, answer, visual_confidence)
         except Exception as exc:
             warnings.warn(f"OpenAI grading call failed, falling back: {exc}", RuntimeWarning)
     elif os.environ.get("GEMINI_API_KEY"):
         try:
-            return _grade_with_gemini(question, answer)
+            return _grade_with_gemini(question, answer, visual_confidence)
         except Exception as exc:
             warnings.warn(f"Gemini grading call failed, falling back: {exc}", RuntimeWarning)
     return _grade_fallback(question, answer)
@@ -60,8 +64,18 @@ def grade_answer(question: str, answer: str) -> Dict[str, Any]:
 # Real LLM paths
 # ---------------------------------------------------------------------
 
-def _build_prompt(question: str, answer: str) -> str:
-    return f"Question: {question}\n\nCandidate's answer: {answer}"
+def _build_prompt(question: str, answer: str, visual_confidence: Optional[float] = None) -> str:
+    try:
+        visual_score = max(0, min(100, round(float(visual_confidence))))
+    except (TypeError, ValueError):
+        visual_score = None
+
+    visual_note = (
+        f"Visual delivery confidence estimate (minor, noisy signal): {visual_score}/100."
+        if visual_score is not None
+        else "No visual delivery confidence estimate was supplied."
+    )
+    return f"Question: {question}\n\nCandidate's answer: {answer}\n\n{visual_note}"
 
 
 def _parse_llm_json(text: str) -> Dict[str, Any]:
@@ -78,7 +92,9 @@ def _parse_llm_json(text: str) -> Dict[str, Any]:
     return {"score": score, "feedback": feedback}
 
 
-def _grade_with_anthropic(question: str, answer: str) -> Dict[str, Any]:
+def _grade_with_anthropic(
+    question: str, answer: str, visual_confidence: Optional[float] = None,
+) -> Dict[str, Any]:
     try:
         import importlib
 
@@ -92,13 +108,15 @@ def _grade_with_anthropic(question: str, answer: str) -> Dict[str, Any]:
         model=model,
         max_tokens=300,
         system=_SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": _build_prompt(question, answer)}],
+        messages=[{"role": "user", "content": _build_prompt(question, answer, visual_confidence)}],
     )
     parts = [block.text for block in message.content if getattr(block, "type", None) == "text"]
     return _parse_llm_json("".join(parts))
 
 
-def _grade_with_openai(question: str, answer: str) -> Dict[str, Any]:
+def _grade_with_openai(
+    question: str, answer: str, visual_confidence: Optional[float] = None,
+) -> Dict[str, Any]:
     try:
         import importlib
 
@@ -111,12 +129,14 @@ def _grade_with_openai(question: str, answer: str) -> Dict[str, Any]:
     response = client.responses.create(
         model=model,
         instructions=_SYSTEM_PROMPT,
-        input=_build_prompt(question, answer),
+        input=_build_prompt(question, answer, visual_confidence),
     )
     return _parse_llm_json(response.output_text)
 
 
-def _grade_with_gemini(question: str, answer: str) -> Dict[str, Any]:
+def _grade_with_gemini(
+    question: str, answer: str, visual_confidence: Optional[float] = None,
+) -> Dict[str, Any]:
     try:
         import importlib
         genai = importlib.import_module("google.genai")
@@ -132,7 +152,7 @@ def _grade_with_gemini(question: str, answer: str) -> Dict[str, Any]:
     client = genai.Client(api_key=api_key)
     response = client.models.generate_content(
         model=model_name,
-        contents=_build_prompt(question, answer),
+        contents=_build_prompt(question, answer, visual_confidence),
         config=types.GenerateContentConfig(
             system_instruction=_SYSTEM_PROMPT,
             max_output_tokens=1024,

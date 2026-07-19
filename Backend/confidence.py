@@ -31,7 +31,7 @@ except ImportError:  # pragma: no cover - optional dependency
 
 if mp is not None and cv2 is not None and np is not None:
     try:
-        _face_mesh = mp.solutions.face_mesh.FaceMesh(
+        _face_mesh = mp.solutions.face_mesh.FaceMesh(   # type: ignore[attr-defined]
             static_image_mode=True,
             max_num_faces=1,
             refine_landmarks=True,

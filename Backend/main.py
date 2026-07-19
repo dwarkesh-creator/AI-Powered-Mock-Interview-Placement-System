@@ -14,6 +14,7 @@ Endpoints:
 """
 
 import hashlib
+import json
 import os
 import sqlite3
 import sys
@@ -261,6 +262,26 @@ class QuestionRequest:
 @dataclass
 class QuestionResponse:
     questions: List[str]
+
+
+@dataclass
+class InterviewTurnRequest:
+    role: str = "Software Engineer"
+    topic: str = ""
+    difficulty: str = "medium"
+    total_questions: int = 5
+    history: Optional[List[Dict[str, Any]]] = None
+    visual_confidence: Optional[float] = None
+    model: Optional[str] = None
+
+
+@dataclass
+class InterviewTurnResponse:
+    feedback: str
+    score: float
+    improvements: List[str]
+    next_question: str
+    is_last_question: bool
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -585,6 +606,179 @@ def _generate_questions_llm(role: str, resume_text: str, num: int) -> List[str]:
             pass
 
     return _generate_questions_heuristic(role, resume_text or "", num)
+
+
+def _normalise_interview_history(history: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
+    if not isinstance(history, list) or not history:
+        raise HTTPException(status_code=422, detail="Interview history must contain at least one turn.")
+
+    normalised: List[Dict[str, Any]] = []
+    for turn in history:
+        if not isinstance(turn, dict):
+            raise HTTPException(status_code=422, detail="Each interview history turn must be an object.")
+
+        role = str(turn.get("role", "")).strip()
+        parts = turn.get("parts")
+        if role not in {"user", "model"} or not isinstance(parts, list) or not parts:
+            raise HTTPException(status_code=422, detail="Each interview history turn needs a role and text part.")
+
+        text = str((parts[0] or {}).get("text", "")).strip() if isinstance(parts[0], dict) else ""
+        if not text:
+            raise HTTPException(status_code=422, detail="Interview history text must not be empty.")
+
+        normalised.append({"role": role, "parts": [{"text": text}]})
+
+    if normalised[-1]["role"] != "user":
+        raise HTTPException(status_code=422, detail="Interview history must end with a user turn.")
+
+    return normalised
+
+
+def _answered_question_count(history: List[Dict[str, Any]]) -> int:
+    return sum(
+        turn["role"] == "user" and turn["parts"][0]["text"] != "[START_INTERVIEW]"
+        for turn in history
+    )
+
+
+def _interview_system_instruction(body: InterviewTurnRequest, history: List[Dict[str, Any]]) -> str:
+    answer_count = _answered_question_count(history)
+    total_questions = max(1, min(int(body.total_questions or 5), 20))
+
+    visual_context = ""
+    if body.visual_confidence is not None:
+        try:
+            visual_score = max(0, min(100, round(float(body.visual_confidence))))
+            visual_context = (
+                f" The latest answer has a visual delivery confidence estimate of {visual_score}/100. "
+                "Treat it as a noisy, supplementary signal only; answer correctness, relevance, and reasoning "
+                "must be weighted much more heavily."
+            )
+        except (TypeError, ValueError):
+            pass
+
+    return (
+        "You are conducting a friendly, realistic mock interview. "
+        f"The candidate is interviewing for {body.role}. Focus area: {body.topic or body.role}. "
+        f"Difficulty: {body.difficulty}. The interview has exactly {total_questions} questions. "
+        f"The candidate has answered {answer_count} question(s) so far.{visual_context}\n\n"
+        "The contents array is the full conversation history. Its first user message may be "
+        "'[START_INTERVIEW]', which means the candidate has not answered yet. "
+        "For every answered question, evaluate the immediately previous candidate answer. "
+        "When relevant, reference a specific detail from that answer in the next question, such as asking "
+        "for an example, a trade-off, or a deeper explanation. Use a short, natural conversational transition "
+        "when changing topics instead of sounding like a fixed list. Still cover the configured role and focus "
+        "area over the planned number of questions.\n\n"
+        "Return JSON only, with exactly these fields: feedback (brief string), score (number from 0 to 10), "
+        "improvements (array of concise strings), next_question (string), and is_last_question (boolean). "
+        "For the start message, return score 0, empty feedback and improvements, and the first question. "
+        "After the final answer, set is_last_question to true and next_question to an empty string. "
+        "For a visual estimate, feedback may briefly address observable delivery, but never make medical, "
+        "personality, or emotion claims."
+    )
+
+
+def _normalise_interview_response(
+    payload: Dict[str, Any],
+    history: List[Dict[str, Any]],
+    total_questions: int,
+) -> InterviewTurnResponse:
+    try:
+        score = float(payload.get("score"))
+    except (TypeError, ValueError):
+        raise ValueError("Gemini returned an invalid interview score.") from None
+
+    if not 0 <= score <= 10:
+        raise ValueError("Gemini returned an interview score outside 0-10.")
+
+    improvements = payload.get("improvements")
+    if not isinstance(improvements, list):
+        raise ValueError("Gemini returned invalid interview improvements.")
+
+    clean_improvements = [
+        str(item).strip()
+        for item in improvements
+        if isinstance(item, str) and item.strip()
+    ]
+    next_question = str(payload.get("next_question") or "").strip()
+    answer_count = _answered_question_count(history)
+    is_start = answer_count == 0
+    is_last_question = answer_count >= max(1, min(int(total_questions or 5), 20))
+
+    if is_start:
+        score = 0
+        clean_improvements = []
+        feedback = ""
+    else:
+        feedback = str(payload.get("feedback") or "").strip()
+
+    if is_last_question:
+        next_question = ""
+    elif not next_question:
+        raise ValueError("Gemini did not return the next interview question.")
+
+    return InterviewTurnResponse(
+        feedback=feedback,
+        score=score,
+        improvements=clean_improvements,
+        next_question=next_question,
+        is_last_question=is_last_question,
+    )
+
+
+def _generate_gemini_interview_turn(
+    api_key: str,
+    history: List[Dict[str, Any]],
+    body: InterviewTurnRequest,
+) -> InterviewTurnResponse:
+    import importlib
+
+    genai = importlib.import_module("google.genai")
+    types = importlib.import_module("google.genai.types")
+    client = genai.Client(api_key=api_key)
+    config_args: Dict[str, Any] = {
+        "system_instruction": _interview_system_instruction(body, history),
+        "response_mime_type": "application/json",
+        "temperature": 0.45,
+        "max_output_tokens": 700,
+    }
+    if hasattr(types, "ThinkingConfig"):
+        config_args["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+
+    response = client.models.generate_content(
+        model=(body.model or os.environ.get("GEMINI_MODEL") or _DEFAULT_GEMINI_CHAT_MODEL).strip(),
+        contents=history,
+        config=types.GenerateContentConfig(**config_args),
+    )
+    raw_response = str(getattr(response, "text", "") or "").strip()
+    if raw_response.startswith("```"):
+        raw_response = raw_response.strip("`").removeprefix("json").strip()
+    if not raw_response:
+        raise RuntimeError("Gemini returned no interview response.")
+
+    try:
+        payload = json.loads(raw_response)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("Gemini returned non-JSON interview feedback.") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("Gemini returned an invalid interview response.")
+
+    return _normalise_interview_response(payload, history, body.total_questions)
+
+
+@app.post("/api/interview/next-turn", response_model=InterviewTurnResponse, tags=["ai"])
+def interview_next_turn(body: InterviewTurnRequest):
+    history = _normalise_interview_history(body.history)
+    gemini_key = (os.environ.get("GEMINI_API_KEY") or "").strip().strip('"').strip("'")
+    if not gemini_key:
+        raise HTTPException(status_code=503, detail="Gemini API key is not configured.")
+
+    try:
+        return _generate_gemini_interview_turn(gemini_key, history, body)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Gemini interview generation failed: {exc}") from exc
 
 
 @app.post("/api/generate-questions", response_model=QuestionResponse, tags=["ai"])
