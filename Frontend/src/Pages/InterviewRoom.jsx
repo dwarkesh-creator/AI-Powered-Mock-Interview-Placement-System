@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Mic, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import { X, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
 import { useInterviewRecorder } from '../Hooks/useInterviewRecorder.js';
-import { interviewQuestions } from '../Mockdata/Mockdata.js';
+import { interviewQuestions as fallbackQuestions } from '../Mockdata/Mockdata.js';
+import { generateQuestions, createSession } from '../Hooks/apiClient.js';
+import { useAuth } from '../Context/AuthContext.jsx';
+import AnswerRecorder from '../Component/AnswerRecorder.jsx';
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60)
@@ -14,19 +17,67 @@ function formatTime(totalSeconds) {
 
 export default function InterviewRoom() {
   const navigate = useNavigate();
+  const { auth } = useAuth();
   const [questionIndex, setQuestionIndex] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [sessionSeconds, setSessionSeconds] = useState(0);
+  const [answers, setAnswers] = useState([]);
+  const [finalReport, setFinalReport] = useState(null);
 
-  const { videoRef, permissionState, isRecording, elapsedSeconds, startRecording, stopRecording } =
+  // Questions fetched from backend (or fallback)
+  const [questions, setQuestions] = useState([]);
+  const [loadingQuestions, setLoadingQuestions] = useState(true);
+
+  const { videoRef, permissionState, isRecording } =
     useInterviewRecorder({
       onAnswerRecorded: (blob) => {
-        // TODO: upload `blob` to the backend for transcription + scoring.
         console.log(`Answer for Q${questionIndex + 1} recorded:`, blob);
       },
     });
 
-  const isLastQuestion = questionIndex === interviewQuestions.length - 1;
+  // Fetch questions on mount
+  useEffect(() => {
+    generateQuestions({ role: 'Software Engineer', numQuestions: 5 })
+      .then((data) => {
+        if (data.questions?.length > 0) {
+          setQuestions(data.questions);
+        } else {
+          setQuestions(fallbackQuestions);
+        }
+      })
+      .catch(() => setQuestions(fallbackQuestions))
+      .finally(() => setLoadingQuestions(false));
+  }, []);
+
+  const isLastQuestion = questions.length > 0 && questionIndex === questions.length - 1;
+
+  async function handleAnswerSubmitted(result) {
+    const nextAnswers = [...answers, result];
+    setAnswers(nextAnswers);
+
+    if (isLastQuestion) {
+      const overallScore = Math.round(
+        nextAnswers.reduce((sum, answer) => sum + answer.score, 0) / nextAnswers.length
+      );
+      setFinalReport({ overallScore, answers: nextAnswers });
+      setIsFinished(true);
+
+      // Save session to backend (skip for guests)
+      if (auth?.userId && !auth?.isGuest) {
+        try {
+          await createSession({
+            userId: auth.userId,
+            role: 'Mock Interview',
+            finalScore: overallScore,
+          });
+        } catch (err) {
+          console.error('Failed to save session:', err);
+        }
+      }
+    } else {
+      setQuestionIndex((prev) => prev + 1);
+    }
+  }
 
   // Session clock — runs for the whole interview, independent of the
   // per-answer recording timer shown next to the controls.
@@ -35,13 +86,13 @@ export default function InterviewRoom() {
     return () => clearInterval(interval);
   }, []);
 
-  function handleSubmitAnswer() {
-    stopRecording();
-    if (isLastQuestion) {
-      setIsFinished(true);
-    } else {
-      setQuestionIndex((prev) => prev + 1);
-    }
+  if (loadingQuestions) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 text-zinc-50">
+        <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+        <p className="mt-3 text-sm text-zinc-500">Generating interview questions...</p>
+      </div>
+    );
   }
 
   return (
@@ -57,7 +108,7 @@ export default function InterviewRoom() {
         </button>
         {!isFinished && (
           <span className="font-data text-xs text-zinc-500">
-            Question {questionIndex + 1} of {interviewQuestions.length}
+            Question {questionIndex + 1} of {questions.length}
           </span>
         )}
         <span className="font-data w-16 text-right text-xs text-zinc-500">
@@ -74,9 +125,12 @@ export default function InterviewRoom() {
               <CheckCircle2 className="h-8 w-8 text-zinc-300" strokeWidth={1.5} />
               <h1 className="mt-5 text-2xl font-semibold tracking-tight">That's a wrap.</h1>
               <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">
-                All {interviewQuestions.length} answers were recorded. We'll score this attempt
-                and add it to your dashboard shortly.
+                Your interview is complete. The final score below is the average of all answers.
               </p>
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Overall score</p>
+                <p className="mt-2 text-4xl font-semibold text-zinc-50">{finalReport?.overallScore}/100</p>
+              </div>
               <button
                 onClick={() => navigate('/dashboard')}
                 className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
@@ -90,38 +144,14 @@ export default function InterviewRoom() {
                 AI Question
               </span>
               <h1 className="mt-4 text-2xl font-medium leading-snug tracking-tight text-zinc-50 lg:text-[28px]">
-                {interviewQuestions[questionIndex]}
+                {questions[questionIndex]}
               </h1>
               <p className="mt-4 text-sm text-zinc-500">
                 Speak naturally, as you would in a real interview. Aim for under two minutes.
               </p>
 
-              <div className="mt-10 flex items-center gap-4">
-                {!isRecording ? (
-                  <button
-                    onClick={startRecording}
-                    disabled={permissionState !== 'granted'}
-                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    <Mic className="h-4 w-4" strokeWidth={2} />
-                    Start Answering
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleSubmitAnswer}
-                    className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
-                  >
-                    <span className="h-2.5 w-2.5 rounded-sm bg-black" />
-                    Submit Answer
-                  </button>
-                )}
-
-                {isRecording && (
-                  <span className="inline-flex items-center gap-2 text-xs text-zinc-500">
-                    <span className="h-2 w-2 rounded-full bg-red-500 motion-safe:animate-pulse" />
-                    <span className="font-data">{formatTime(elapsedSeconds)}</span>
-                  </span>
-                )}
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <AnswerRecorder question={questions[questionIndex]} onSubmit={handleAnswerSubmitted} />
               </div>
 
               {permissionState === 'denied' && (

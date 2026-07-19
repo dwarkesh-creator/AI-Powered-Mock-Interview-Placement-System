@@ -12,7 +12,7 @@
  *     -> { overallScore, strengths: string[], improvements: string[] }
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export async function analyzeAnswer({ questionIndex, question, audioBlob, frames }) {
   const formData = new FormData();
@@ -28,6 +28,22 @@ export async function analyzeAnswer({ questionIndex, question, audioBlob, frames
 
   if (!res.ok) {
     throw new Error(`analyze-answer failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function gradeAnswer({ question, answer }) {
+  const res = await fetch(`${API_BASE_URL}/api/grade-answer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question,
+      answer,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`grade-answer failed: ${res.status}`);
   }
   return res.json();
 }

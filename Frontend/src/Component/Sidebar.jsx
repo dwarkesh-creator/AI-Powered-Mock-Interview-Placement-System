@@ -1,17 +1,12 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Video, Target, LogOut, Sparkles } from 'lucide-react';
-import { currentUser } from '../Mockdata/Mockdata.js';
+import { useAuth } from '../Context/AuthContext.jsx';
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/interview', label: 'Interview', icon: Video },
   { to: '/placement', label: 'Placement', icon: Target },
 ];
-
-const initials = currentUser.name
-  .split(' ')
-  .map((part) => part[0])
-  .join('');
 
 /**
  * `className` must carry the FULL spacing/size classes for each context
@@ -38,6 +33,24 @@ function NavItem({ to, label, icon: Icon, className }) {
 }
 
 export default function Sidebar() {
+  const { auth, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const isGuest = auth?.isGuest;
+  const displayName = isGuest ? 'Guest' : auth?.email?.split('@')[0] || 'Student';
+  const initials = isGuest
+    ? 'G'
+    : displayName
+    .split(/[.\-_]/)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('')
+    .slice(0, 2) || 'U';
+
+  function handleLogout() {
+    logout();
+    navigate('/login');
+  }
+
   return (
     <>
       {/* Desktop sidebar */}
@@ -61,19 +74,18 @@ export default function Sidebar() {
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-zinc-200">{currentUser.name}</p>
+              <p className="truncate text-sm font-medium text-zinc-200">{displayName}</p>
               <p className="truncate text-xs text-zinc-500">
-                {currentUser.year} · {currentUser.branch}
+                {isGuest ? 'Guest session' : auth?.email || ''}
               </p>
             </div>
-            {/* Placeholder logout — swap for real auth teardown once /login is wired up. */}
-            <NavLink
-              to="/login"
+            <button
+              onClick={handleLogout}
               aria-label="Sign out"
               className="text-zinc-500 transition-colors hover:text-zinc-200"
             >
               <LogOut className="h-4 w-4" strokeWidth={1.75} />
-            </NavLink>
+            </button>
           </div>
         </div>
       </aside>

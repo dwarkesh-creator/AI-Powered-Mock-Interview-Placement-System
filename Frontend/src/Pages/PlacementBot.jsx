@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, Plus, Sparkles } from 'lucide-react';
 import ChatBubble from '../Component/ChatBubble.jsx';
+import { chatWithBot } from '../Hooks/apiClient.js';
 import {
   targetRoles,
   botIntroMessage,
-  getMockBotReply,
   estimatePlacementProbability,
 } from '../Mockdata/Mockdata.js';
 
@@ -60,7 +60,7 @@ export default function PlacementBot() {
     setSkills(skills.filter((s) => s !== skill));
   }
 
-  function sendMessage(e) {
+  async function sendMessage(e) {
     e.preventDefault();
     const text = chatInput.trim();
     if (!text) return;
@@ -70,16 +70,38 @@ export default function PlacementBot() {
     setChatInput('');
     setIsBotTyping(true);
 
-    // Mock latency — swap for a real call to the career-bot endpoint.
-    setTimeout(() => {
+    try {
+      // Build context from the metrics form
+      const context = {};
+      if (cgpa) context.cgpa = parseFloat(cgpa);
+      if (skills.length > 0) context.skills = skills;
+      if (targetRole) context.targetRole = targetRole;
+
+      // Send a small conversation window so replies such as "but how?"
+      // keep the topic of the previous coach response.
+      const history = messages
+        .filter((message) => message.id !== 'intro')
+        .slice(-8)
+        .map(({ role, content }) => ({ role, content }));
+
+      const data = await chatWithBot(text, context, history);
       const botMessage = {
         id: crypto.randomUUID(),
         role: 'bot',
-        content: getMockBotReply(messages.length),
+        content: data.reply,
       };
       setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      console.error('Chat failed:', err);
+      const errorMessage = {
+        id: crypto.randomUUID(),
+        role: 'bot',
+        content: 'Sorry, I couldn\'t connect to the AI service. Please check that the backend is running.',
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsBotTyping(false);
-    }, 900);
+    }
   }
 
   return (
@@ -206,6 +228,7 @@ export default function PlacementBot() {
               <Sparkles className="h-3.5 w-3.5 text-black" strokeWidth={2} />
             </div>
             <span className="text-sm font-medium text-zinc-200">Career bot</span>
+            <span className="ml-auto text-xs text-emerald-400/70">● AI-powered</span>
           </div>
 
           <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
@@ -229,7 +252,7 @@ export default function PlacementBot() {
             />
             <button
               type="submit"
-              disabled={!chatInput.trim()}
+              disabled={!chatInput.trim() || isBotTyping}
               aria-label="Send message"
               className="flex shrink-0 items-center justify-center rounded-full bg-white p-2.5 text-black transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
             >

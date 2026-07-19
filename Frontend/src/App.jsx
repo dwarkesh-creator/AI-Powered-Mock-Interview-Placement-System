@@ -1,9 +1,19 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './Context/AuthContext.jsx';
 import AppLayout from './Layout/AppLayout.jsx';
 import Login from './Pages/Login.jsx';
 import Dashboard from './Pages/Dashboard.jsx';
 import InterviewRoom from './Pages/InterviewRoom.jsx';
 import PlacementBot from './Pages/PlacementBot.jsx';
+
+/**
+ * Redirects to /login if no auth token is present.
+ */
+function ProtectedRoute({ children }) {
+  const { auth } = useAuth();
+  if (!auth?.token) return <Navigate to="/login" replace />;
+  return children;
+}
 
 /**
  * Route map for the NilGen SPA.
@@ -15,20 +25,23 @@ import PlacementBot from './Pages/PlacementBot.jsx';
  */
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<Login />} />
 
-      <Route element={<AppLayout />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/placement" element={<PlacementBot />} />
-      </Route>
+        <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/placement" element={<PlacementBot />} />
+        </Route>
 
-      <Route path="/interview" element={<InterviewRoom />} />
+        <Route
+          path="/interview"
+          element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>}
+        />
 
-      {/* No auth guard yet — wire up a ProtectedRoute once /login talks
-          to a real backend. Until then, everything is reachable. */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
+    </AuthProvider>
   );
 }
