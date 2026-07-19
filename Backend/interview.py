@@ -6,9 +6,14 @@ import os
 import tempfile
 from flask import Blueprint, request, jsonify
 
-from services.transcription import transcribe_audio
-from services.confidence import analyze_visual_confidence
-from services.correctness import grade_answer
+try:
+    from .transcription import transcribe_audio
+    from .confidence import analyze_visual_confidence
+    from .correctness import grade_answer
+except ImportError:  # pragma: no cover - supports direct script execution
+    from transcription import transcribe_audio
+    from confidence import analyze_visual_confidence
+    from correctness import grade_answer
 
 interview_bp = Blueprint("interview", __name__, url_prefix="/api/interview")
 

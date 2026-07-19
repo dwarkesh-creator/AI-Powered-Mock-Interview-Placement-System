@@ -19,16 +19,30 @@ at a time during dev/testing; give each request its own instance (or
 add a lock) before running this under a multi-worker server.
 """
 import base64
-import numpy as np
-import cv2
-import mediapipe as mp
 
-_face_mesh = mp.solutions.face_mesh.FaceMesh(
-    static_image_mode=True,
-    max_num_faces=1,
-    refine_landmarks=True,
-    min_detection_confidence=0.5,
-)
+try:
+    import numpy as np
+    import cv2
+    import mediapipe as mp
+except ImportError:  # pragma: no cover - optional dependency
+    np = None
+    cv2 = None
+    mp = None
+
+if mp is not None and cv2 is not None and np is not None:
+    try:
+        _face_mesh = mp.solutions.face_mesh.FaceMesh(
+            static_image_mode=True,
+            max_num_faces=1,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+        )
+    except Exception as _exc:
+        import warnings as _w
+        _w.warn(f"FaceMesh init failed ({_exc}); visual confidence scoring disabled.", RuntimeWarning)
+        _face_mesh = None
+else:
+    _face_mesh = None
 
 # Standard 6-point eye landmark sets used for Eye Aspect Ratio (EAR),
 # a well-documented formula for eye-openness/blink detection.
@@ -39,16 +53,22 @@ _NOSE_TIP = 1
 
 def _decode_frame(data_url: str):
     """Decodes a base64 JPEG data URL (as sent by the frontend) into a BGR image."""
+    if np is None or cv2 is None:
+        return None
+
     try:
         _header, encoded = data_url.split(",", 1)
         img_bytes = base64.b64decode(encoded)
         img_array = np.frombuffer(img_bytes, dtype=np.uint8)
         return cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-    except (ValueError, cv2.error):
+    except (ValueError, AttributeError):
         return None
 
 
 def _eye_aspect_ratio(landmarks, eye_indices, w, h):
+    if np is None:
+        return 0.0
+
     pts = [(landmarks[i].x * w, landmarks[i].y * h) for i in eye_indices]
     p1, p2, p3, p4, p5, p6 = pts
     vertical = np.linalg.norm(np.array(p2) - np.array(p6)) + np.linalg.norm(
@@ -59,6 +79,9 @@ def _eye_aspect_ratio(landmarks, eye_indices, w, h):
 
 
 def _extract_frame_features(data_url: str):
+    if _face_mesh is None or np is None or cv2 is None:
+        return None
+
     frame = _decode_frame(data_url)
     if frame is None:
         return None
@@ -90,6 +113,9 @@ def analyze_visual_confidence(frames: list) -> dict:
     the route handler, since it comes from the transcript, not frames.
     """
     if not frames:
+        return {"eyeContact": 30, "steadiness": 30, "facePresence": 0}
+
+    if np is None:
         return {"eyeContact": 30, "steadiness": 30, "facePresence": 0}
 
     frame_features = [_extract_frame_features(f) for f in frames]

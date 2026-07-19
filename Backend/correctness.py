@@ -8,9 +8,13 @@ you're setting up API access.
 """
 import os
 import json
-import anthropic
 
-_client = anthropic.Anthropic() if os.getenv("ANTHROPIC_API_KEY") else None
+try:
+    import anthropic
+except ImportError:  # pragma: no cover - optional dependency
+    anthropic = None
+
+_client = anthropic.Anthropic() if anthropic and os.getenv("ANTHROPIC_API_KEY") else None
 
 _GRADING_PROMPT = """You are grading a student's spoken answer in a mock technical interview. Be encouraging but honest.
 
