@@ -36,10 +36,19 @@ How scoring works
 """
 
 import json
+import math
 import os
+import re
+from typing import Any
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+TfidfVectorizer: Any
+cosine_similarity: Any
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+except ImportError:
+    TfidfVectorizer = None
+    cosine_similarity = None
 
 _BANK_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reference_bank.json")
 
@@ -66,24 +75,83 @@ def _compute_similarity(answer: str, reference_entry) -> float:
     made up entirely of stop words, which leaves TF-IDF with an empty vocab).
     """
     corpus = [entry["answer"] for entry in REFERENCE_BANK]
+    if TfidfVectorizer is None or cosine_similarity is None:
+        return _compute_similarity_without_sklearn(answer, corpus, reference_entry)
+
     try:
         vectorizer = TfidfVectorizer(stop_words="english")
-        matrix = vectorizer.fit_transform(corpus + [answer])
+        matrix: Any = vectorizer.fit_transform(corpus + [answer])
     except ValueError:
         # e.g. "empty vocabulary" when the answer is only stop words/punctuation
         return 0.0
 
-    answer_vec = matrix[-1]
-    reference_matrix = matrix[:-1]
-    sims = cosine_similarity(answer_vec, reference_matrix)[0]
+    answer_vec = matrix.getrow(matrix.shape[0] - 1)
+    sims = [
+        float(cosine_similarity(answer_vec, matrix.getrow(index))[0][0])
+        for index in range(matrix.shape[0] - 1)
+    ]
 
     if reference_entry is not None:
         idx = REFERENCE_BANK.index(reference_entry)
         return float(sims[idx])
-    return float(sims.max()) if len(sims) else 0.0
+    return max(sims, default=0.0)
 
 
-def _match_keypoints(answer: str, keypoints: list) -> list:
+_TOKEN_PATTERN = re.compile(r"[A-Za-z][A-Za-z0-9']*")
+_FALLBACK_STOP_WORDS = frozenset(
+    {
+        "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
+        "has", "have", "in", "into", "is", "it", "of", "on", "or", "that",
+        "the", "this", "to", "was", "were", "which", "with",
+    }
+)
+
+
+def _compute_similarity_without_sklearn(answer: str, corpus: list, reference_entry) -> float:
+    """Compute cosine similarity without importing optional ML packages."""
+    documents = [_tokens(text) for text in corpus + [answer]]
+    document_count = len(documents)
+    document_frequency = {}
+    for document in documents:
+        for token in set(document):
+            document_frequency[token] = document_frequency.get(token, 0) + 1
+
+    vectors = []
+    for document in documents:
+        term_frequency = {}
+        for token in document:
+            term_frequency[token] = term_frequency.get(token, 0) + 1
+        vector = {
+            token: count * (math.log((1 + document_count) / (1 + document_frequency[token])) + 1)
+            for token, count in term_frequency.items()
+        }
+        vectors.append(vector)
+
+    answer_vector = vectors[-1]
+
+    def similarity(reference_vector):
+        numerator = sum(value * answer_vector.get(token, 0.0) for token, value in reference_vector.items())
+        reference_norm = math.sqrt(sum(value * value for value in reference_vector.values()))
+        answer_norm = math.sqrt(sum(value * value for value in answer_vector.values()))
+        if not reference_norm or not answer_norm:
+            return 0.0
+        return numerator / (reference_norm * answer_norm)
+
+    similarities = [similarity(vector) for vector in vectors[:-1]]
+    if reference_entry is not None:
+        return similarities[REFERENCE_BANK.index(reference_entry)]
+    return max(similarities, default=0.0)
+
+
+def _tokens(text: str) -> list:
+    return [
+        token.lower()
+        for token in _TOKEN_PATTERN.findall(text)
+        if token.lower() not in _FALLBACK_STOP_WORDS
+    ]
+
+
+def _match_keypoints(answer: str, keypoints: list[str]) -> list[str]:
     """Case-insensitive substring match of each keypoint phrase in the answer."""
     if not keypoints:
         return []
@@ -91,7 +159,9 @@ def _match_keypoints(answer: str, keypoints: list) -> list:
     return [kp for kp in keypoints if kp.lower() in answer_lower]
 
 
-def _build_feedback(score: int, matched_keypoints: list, keypoints: list, word_count: int) -> str:
+def _build_feedback(
+    score: int, matched_keypoints: list[str], keypoints: list[str], word_count: int
+) -> str:
     if word_count == 0:
         return "No answer provided."
 
@@ -115,7 +185,9 @@ def _build_feedback(score: int, matched_keypoints: list, keypoints: list, word_c
     return " ".join(parts)
 
 
-def grade_answer(question: str, answer: str, ideal_keypoints: list = None) -> dict:
+def grade_answer(
+    question: str, answer: str | None, ideal_keypoints: list[str] | None = None
+) -> dict:
     """
     Grade a candidate's answer to an interview question.
 
@@ -142,8 +214,10 @@ def grade_answer(question: str, answer: str, ideal_keypoints: list = None) -> di
         }
 
     reference_entry = _find_reference_entry(question)
-    keypoints = ideal_keypoints if ideal_keypoints is not None else (
-        reference_entry["keypoints"] if reference_entry else []
+    keypoints: list[str] = (
+        ideal_keypoints
+        if ideal_keypoints is not None
+        else (reference_entry["keypoints"] if reference_entry else [])
     )
 
     matched_keypoints = _match_keypoints(answer, keypoints)

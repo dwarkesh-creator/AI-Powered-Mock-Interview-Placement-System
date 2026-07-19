@@ -127,7 +127,11 @@ def _llm_anthropic(role: str, resume_text: str, num: int, api_key: str) -> list[
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}],
     )
-    text = "".join(b.text for b in msg.content if getattr(b, "type", None) == "text")
+    text_parts = []
+    for b in msg.content:
+        if isinstance(b, anthropic.types.TextBlock):
+            text_parts.append(b.text)
+    text = "".join(text_parts)
     return _parse_json_array(text, num)
 
 
@@ -141,7 +145,8 @@ def _llm_openai(role: str, resume_text: str, num: int, api_key: str) -> list[str
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1000,
     )
-    return _parse_json_array(resp.choices[0].message.content.strip(), num)
+    content = resp.choices[0].message.content or ""
+    return _parse_json_array(content.strip(), num)
 
 
 def _build_prompt(role: str, resume_text: str, num: int) -> str:

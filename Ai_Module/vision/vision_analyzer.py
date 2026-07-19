@@ -24,13 +24,26 @@ Pipeline
        are directly comparable.
 """
 
+import importlib
 import os
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
 
-import cv2
-import numpy as np
-import tensorflow as tf
+if TYPE_CHECKING:
+    import cv2  # type: ignore
+    import numpy as np  # type: ignore
+    import tensorflow as tf  # type: ignore
+
+cv2: Any = None
+np: Any = None
+tf: Any = None
+
+try:
+    cv2 = importlib.import_module("cv2")
+    np = importlib.import_module("numpy")
+    tf = importlib.import_module("tensorflow")
+except Exception:
+    pass
 
 EMOTION_LABELS = ["angry", "disgust", "fear", "happy", "sad", "surprise", "neutral"]
 _DEFAULT_MODEL_PATH = os.path.join(os.path.dirname(__file__), "models", "emotion_model_quantized.tflite")
@@ -69,7 +82,7 @@ def compute_confidence_score(avg_emotions: Dict[str, float], presence_rate: floa
     return round(min(100, max(0, score)))
 
 
-def quantize_input(face_float: np.ndarray, input_detail: dict) -> np.ndarray:
+def quantize_input(face_float: Any, input_detail: dict) -> Any:
     """Convert a float32, [-1, 1]-normalized face image into whatever dtype
     the TFLite model actually expects.
 
@@ -100,7 +113,7 @@ def quantize_input(face_float: np.ndarray, input_detail: dict) -> np.ndarray:
     return face_float.astype(dtype)
 
 
-def dequantize_output(output: np.ndarray, output_detail: dict) -> np.ndarray:
+def dequantize_output(output: Any, output_detail: dict) -> Any:
     """Inverse of quantize_input, applied to the model's output tensor, so
     the returned scores are always comparable floats regardless of whether
     the underlying model is quantized.
@@ -144,7 +157,7 @@ class VisionAnalyzer:
         self._face_count = 0
         self._emotion_totals = {label: 0.0 for label in EMOTION_LABELS}
 
-    def analyze_frame(self, frame_bgr: np.ndarray) -> FrameResult:
+    def analyze_frame(self, frame_bgr: Any) -> FrameResult:
         """Run face detection + emotion classification on a single BGR frame
         (as returned by cv2.VideoCapture.read() or cv2.imread()).
         """
@@ -169,7 +182,7 @@ class VisionAnalyzer:
         dominant = max(emotions, key=lambda label: emotions[label])
         return FrameResult(face_found=True, emotions=emotions, dominant_emotion=dominant, box=(x, y, w, h))
 
-    def _classify(self, face_gray: np.ndarray) -> Dict[str, float]:
+    def _classify(self, face_gray: Any) -> Dict[str, float]:
         input_detail = self._input_details[0]
         _, in_h, in_w, in_c = input_detail["shape"]  # read the model's real expected size
 
@@ -212,3 +225,27 @@ class VisionAnalyzer:
         )
         self._reset_session()
         return summary
+
+
+def analyze_expression(image_bytes: bytes) -> Dict[str, Any]:
+    """Convenience wrapper: decode image bytes, run a single-frame
+    analysis and return a JSON-serializable summary dict.
+
+    This helper is small and useful for server endpoints that accept an
+    uploaded image blob.
+    """
+    if np is None or cv2 is None:
+        raise RuntimeError("Missing numpy/opencv required to analyze images")
+
+    arr = np.frombuffer(image_bytes, dtype=np.uint8)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise ValueError("Could not decode image bytes")
+
+    analyzer = VisionAnalyzer()
+    analyzer.analyze_frame(img)
+    summary = analyzer.summarize_session()
+    # Convert dataclass to plain dict for JSON serialization
+    from dataclasses import asdict
+
+    return asdict(summary)
