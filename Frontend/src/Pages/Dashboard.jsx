@@ -89,7 +89,7 @@ export default function Dashboard() {
       {/* Quick actions */}
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <button
-          onClick={() => navigate('/interview')}
+          onClick={() => navigate('/interview-setup')}
           className="group flex items-center justify-between rounded-2xl border border-white/10 bg-white p-6 text-left text-black transition-colors hover:bg-zinc-200"
         >
           <div>

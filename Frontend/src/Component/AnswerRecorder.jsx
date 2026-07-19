@@ -1,101 +1,167 @@
 import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import useConfidenceDetector from '../Hooks/useConfidenceDetector';
 import useSpeechToText from '../Hooks/useSpeechToText';
 import useTextToSpeech from '../Hooks/useTextToSpeech';
-import { gradeAnswer } from '../Hooks/apiClient';
 
-function detectEmotion(text) {
-  const normalized = (text || '').toLowerCase();
-  if (/(confident|great|excited|happy|love|awesome|sure)/.test(normalized)) return 'positive';
-  if (/(nervous|worried|confused|sad|scared|bad|difficult)/.test(normalized)) return 'negative';
-  return 'neutral';
-}
-
-function AnswerRecorder({ question, onSubmit }) {
+function AnswerRecorder({ question, onSubmit, videoRef, isTransitioning = false }) {
   const { transcript, isListening, error, startListening, stopListening, resetTranscript } = useSpeechToText();
   const { speak, stopSpeaking } = useTextToSpeech();
+  const { liveConfidence, averageConfidence, isTracking } = useConfidenceDetector(videoRef, isListening);
   const [status, setStatus] = useState('Preparing...');
-  const [result, setResult] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isInputReady, setIsInputReady] = useState(false);
+  const [submissionError, setSubmissionError] = useState(null);
   const silenceTimerRef = useRef(null);
+  const submittedRef = useRef(false);
+
+  const latest = useRef({});
+  latest.current = {
+    speak,
+    startListening,
+    stopListening,
+    stopSpeaking,
+    resetTranscript,
+    onSubmit,
+    isProcessing,
+    isInputReady,
+    isTransitioning,
+    averageConfidence,
+    question,
+    transcript,
+  };
+
+  async function submitAnswer(finalText) {
+    const text = finalText?.trim();
+    if (
+      !text
+      || submittedRef.current
+      || latest.current.isProcessing
+      || !latest.current.isInputReady
+      || latest.current.isTransitioning
+    ) return;
+
+    submittedRef.current = true;
+    clearTimeout(silenceTimerRef.current);
+    setIsProcessing(true);
+    setSubmissionError(null);
+    setStatus('Interviewer is thinking...');
+    const visualConfidence = latest.current.averageConfidence;
+    latest.current.stopListening();
+
+    try {
+      const turn = await latest.current.onSubmit?.({ transcript: text, visualConfidence });
+      if (!turn) throw new Error('The interview service returned no next step.');
+
+      latest.current.resetTranscript();
+    } catch (err) {
+      console.error('Interview turn failed:', err);
+      setSubmissionError(err.message || 'Could not evaluate your answer.');
+      setStatus('Evaluation failed.');
+      submittedRef.current = false;
+    } finally {
+      setIsProcessing(false);
+    }
+  }
 
   useEffect(() => {
     if (!question) return;
 
-    setStatus('AI is speaking the question...');
-    speak(question, { rate: 1.02 });
+    submittedRef.current = false;
+    setIsProcessing(false);
+    setIsInputReady(false);
+    setSubmissionError(null);
 
-    const readyTimer = window.setTimeout(() => {
+    let cancelled = false;
+
+    async function beginQuestion() {
+      setStatus('AI is speaking the question...');
+      await latest.current.speak(question, { rate: 1.02 });
+      if (cancelled) return;
+
       setStatus('Listening for your answer...');
-      startListening();
-    }, 1200);
+      latest.current.startListening();
+      setIsInputReady(true);
+    }
+
+    beginQuestion();
 
     return () => {
-      window.clearTimeout(readyTimer);
+      cancelled = true;
       clearTimeout(silenceTimerRef.current);
-      stopSpeaking();
-      stopListening();
+      latest.current.stopSpeaking();
+      latest.current.stopListening();
     };
-  }, [question, speak, startListening, stopListening, stopSpeaking]);
+  }, [question]);
 
   useEffect(() => {
-    if (!transcript?.trim() || !isListening || isProcessing) return;
+    if (
+      !transcript?.trim()
+      || submittedRef.current
+      || latest.current.isProcessing
+      || !latest.current.isInputReady
+      || latest.current.isTransitioning
+    ) return;
 
     clearTimeout(silenceTimerRef.current);
-    silenceTimerRef.current = window.setTimeout(async () => {
-      const finalText = transcript.trim();
-      if (!finalText) return;
-
-      setIsProcessing(true);
-      setStatus('Analyzing your response...');
-      stopListening();
-
-      let payload;
-      try {
-        const gradingResult = await gradeAnswer({ question, answer: finalText });
-        const emotion = detectEmotion(finalText);
-        payload = { ...gradingResult, transcript: finalText, emotion };
-      } catch (err) {
-        console.error('Grading failed:', err);
-        // Build a fallback result so the interview still advances
-        const emotion = detectEmotion(finalText);
-        payload = {
-          score: 50,
-          feedback: 'Grading service was unavailable — score is estimated.',
-          transcript: finalText,
-          emotion,
-        };
-      }
-
-      setResult(payload);
-      onSubmit?.(payload);
-      resetTranscript();
-      setIsProcessing(false);
-      setStatus('Answer recorded.');
+    silenceTimerRef.current = window.setTimeout(() => {
+      submitAnswer(latest.current.transcript);
     }, 2200);
 
     return () => clearTimeout(silenceTimerRef.current);
-  }, [transcript, isListening, isProcessing, question, stopListening, resetTranscript, onSubmit]);
+  }, [transcript]);
+
+  const submitDisabled = (
+    isProcessing
+    || isTransitioning
+    || !isInputReady
+    || submittedRef.current
+  );
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-zinc-400">{status}</p>
-
-      {error && <p className="text-sm text-red-400">{error}</p>}
-
-      <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-        <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Your answer</p>
-        <p className="mt-2 text-sm text-zinc-200">{transcript || 'Waiting for your voice...'}</p>
-      </div>
-
-      {result && (
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3">
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-300">Feedback</p>
-          <p className="mt-1 text-sm text-emerald-100">{result.feedback}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-zinc-300">
-            <span>Score: {result.score}/100</span>
-            <span>Emotion: {result.emotion}</span>
-          </div>
+      {isTransitioning ? (
+        <div className="flex items-center gap-2 py-3 text-sm text-zinc-500" role="status" aria-live="polite">
+          <Loader2 className="h-4 w-4 animate-spin" strokeWidth={1.75} />
+          <span>Interviewer is thinking<span className="animate-pulse">...</span></span>
         </div>
+      ) : (
+        <>
+          <p className="text-sm text-zinc-400">{status}</p>
+
+          {isListening && (
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-400/20 bg-sky-400/10 px-3 py-1.5 text-xs text-sky-100">
+              <span className={`h-1.5 w-1.5 rounded-full ${isTracking ? 'bg-sky-300 animate-pulse' : 'bg-zinc-500'}`} />
+              {isTracking
+                ? (liveConfidence == null
+                  ? 'Confidence: no face detected'
+                  : `Confidence: ${liveConfidence} — analyzing...`)
+                : 'Confidence: starting analysis...'}
+            </div>
+          )}
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          {submissionError && <p className="text-sm text-red-400">{submissionError}</p>}
+
+          <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+            <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Your answer</p>
+            <p className="mt-2 text-sm text-zinc-200">
+              {transcript || (isListening ? 'Listening... speak your answer.' : 'Waiting for your voice...')}
+            </p>
+          </div>
+
+          {transcript?.trim() && (
+            <button
+              type="button"
+              onClick={() => submitAnswer(transcript)}
+              disabled={submitDisabled}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-white/20 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isProcessing ? 'Submitting answer...' : (submissionError ? 'Retry evaluation' : "I'm done - submit answer")}
+              <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+          )}
+        </>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, Plus, Sparkles } from 'lucide-react';
 import ChatBubble from '../Component/ChatBubble.jsx';
+import BuiltBy from '../Component/BuiltBy.jsx';
 import { chatWithBot } from '../Hooks/apiClient.js';
 import {
   targetRoles,
@@ -96,7 +97,7 @@ export default function PlacementBot() {
       const errorMessage = {
         id: crypto.randomUUID(),
         role: 'bot',
-        content: 'Sorry, I couldn\'t connect to the AI service. Please check that the backend is running.',
+        content: err.message || 'Sorry, that request could not be completed. Please try again.',
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -261,6 +262,10 @@ export default function PlacementBot() {
           </form>
         </div>
       </div>
+
+      <footer className="mt-6 border-t border-white/10 pt-4 text-center">
+        <BuiltBy />
+      </footer>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import Login from './Pages/Login.jsx';
 import Dashboard from './Pages/Dashboard.jsx';
 import InterviewRoom from './Pages/InterviewRoom.jsx';
 import PlacementBot from './Pages/PlacementBot.jsx';
+import InterviewSetup from './Pages/InterviewSetup.jsx';
 
 /**
  * Redirects to /login if no auth token is present.
@@ -33,6 +34,11 @@ export default function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/placement" element={<PlacementBot />} />
         </Route>
+
+        <Route
+          path="/interview-setup"
+          element={<ProtectedRoute><InterviewSetup /></ProtectedRoute>}
+        />
 
         <Route
           path="/interview"

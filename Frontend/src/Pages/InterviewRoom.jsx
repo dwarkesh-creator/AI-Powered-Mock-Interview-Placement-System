@@ -1,103 +1,171 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { X, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { X, AlertTriangle, Loader2 } from 'lucide-react';
 import { useInterviewRecorder } from '../Hooks/useInterviewRecorder.js';
-import { interviewQuestions as fallbackQuestions } from '../Mockdata/Mockdata.js';
-import { generateQuestions, createSession } from '../Hooks/apiClient.js';
+import { createSession } from '../Hooks/apiClient.js';
 import { useAuth } from '../Context/AuthContext.jsx';
 import AnswerRecorder from '../Component/AnswerRecorder.jsx';
+import InterviewSummary, { buildInterviewSummary } from '../Component/InterviewSummary.jsx';
+import BuiltBy from '../Component/BuiltBy.jsx';
+import { createInterviewOrchestrator } from '../services/interviewOrchestrator.js';
+
+const DEFAULT_INTERVIEW_CONFIG = {
+  role: 'Software Engineer',
+  topic: 'software engineering fundamentals and project experience',
+  difficulty: 'medium',
+  totalQuestions: 5,
+};
 
 function formatTime(totalSeconds) {
-  const minutes = Math.floor(totalSeconds / 60)
-    .toString()
-    .padStart(2, '0');
+  const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
   const seconds = (totalSeconds % 60).toString().padStart(2, '0');
   return `${minutes}:${seconds}`;
 }
 
+function withTurnId(turn, transcript) {
+  return {
+    id: crypto.randomUUID(),
+    ...turn,
+    transcript,
+  };
+}
+
 export default function InterviewRoom() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { auth } = useAuth();
-  const [questionIndex, setQuestionIndex] = useState(0);
-  const [isFinished, setIsFinished] = useState(false);
-  const [sessionSeconds, setSessionSeconds] = useState(0);
+  const orchestratorRef = useRef(null);
+  const reevaluatingRef = useRef(new Set());
+  const [question, setQuestion] = useState('');
   const [answers, setAnswers] = useState([]);
-  const [finalReport, setFinalReport] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [sessionSeconds, setSessionSeconds] = useState(0);
+  const [isStarting, setIsStarting] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [startError, setStartError] = useState(null);
+  const [evaluationError, setEvaluationError] = useState(null);
 
-  // Questions fetched from backend (or fallback)
-  const [questions, setQuestions] = useState([]);
-  const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const interviewConfig = useMemo(
+    () => ({ ...DEFAULT_INTERVIEW_CONFIG, ...(location.state?.interviewConfig || {}) }),
+    [location.state],
+  );
 
-  const { videoRef, permissionState, isRecording } =
-    useInterviewRecorder({
-      onAnswerRecorded: (blob) => {
-        console.log(`Answer for Q${questionIndex + 1} recorded:`, blob);
-      },
-    });
+  const { videoRef, permissionState, isRecording } = useInterviewRecorder();
 
-  // Fetch questions on mount
+  const startInterview = useCallback(async (reset = false) => {
+    if (reset || !orchestratorRef.current) {
+      orchestratorRef.current = createInterviewOrchestrator(interviewConfig);
+    }
+
+    setIsStarting(true);
+    setStartError(null);
+    try {
+      const firstTurn = await orchestratorRef.current.getNextTurn(null);
+      if (!firstTurn.next_question) {
+        throw new Error('The interview service did not return the first question.');
+      }
+      setQuestion(firstTurn.next_question);
+    } catch (err) {
+      setStartError(err.message || 'Could not start the interview.');
+    } finally {
+      setIsStarting(false);
+    }
+  }, [interviewConfig]);
+
   useEffect(() => {
-    generateQuestions({ role: 'Software Engineer', numQuestions: 5 })
-      .then((data) => {
-        if (data.questions?.length > 0) {
-          setQuestions(data.questions);
-        } else {
-          setQuestions(fallbackQuestions);
-        }
-      })
-      .catch(() => setQuestions(fallbackQuestions))
-      .finally(() => setLoadingQuestions(false));
-  }, []);
+    startInterview(true);
+  }, [startInterview]);
 
-  const isLastQuestion = questions.length > 0 && questionIndex === questions.length - 1;
+  useEffect(() => {
+    if (summary) return undefined;
+    const interval = window.setInterval(() => setSessionSeconds((seconds) => seconds + 1), 1000);
+    return () => window.clearInterval(interval);
+  }, [summary]);
 
-  async function handleAnswerSubmitted(result) {
-    const nextAnswers = [...answers, result];
-    setAnswers(nextAnswers);
+  useEffect(() => {
+    const orchestrator = orchestratorRef.current;
+    if (!orchestrator) return undefined;
 
-    if (isLastQuestion) {
-      const overallScore = Math.round(
-        nextAnswers.reduce((sum, answer) => sum + answer.score, 0) / nextAnswers.length
-      );
-      setFinalReport({ overallScore, answers: nextAnswers });
-      setIsFinished(true);
+    const pendingAnswers = answers
+      .map((answer, index) => ({ answer, index }))
+      .filter(({ answer }) => answer.pendingReEvaluation);
 
-      // Save session to backend (skip for guests)
-      if (auth?.userId && !auth?.isGuest) {
+    if (!pendingAnswers.length) return undefined;
+
+    let cancelled = false;
+
+    async function retryPendingEvaluations() {
+      for (const { answer, index } of pendingAnswers) {
+        if (cancelled || reevaluatingRef.current.has(answer.id)) continue;
+
+        reevaluatingRef.current.add(answer.id);
         try {
-          await createSession({
-            userId: auth.userId,
-            role: 'Mock Interview',
-            finalScore: overallScore,
+          const refreshed = await orchestrator.reevaluateTurn(index);
+          if (cancelled || !refreshed || refreshed.degraded || refreshed.pendingReEvaluation) continue;
+
+          setAnswers((prev) => {
+            const next = prev.map((item) => (
+              item.id === answer.id
+                ? {
+                  ...item,
+                  ...refreshed,
+                  pendingReEvaluation: false,
+                  degraded: false,
+                }
+                : item
+            ));
+            setSummary((current) => (current ? buildInterviewSummary(next) : current));
+            return next;
           });
         } catch (err) {
-          console.error('Failed to save session:', err);
+          console.debug('Background interview re-evaluation failed:', err);
+        } finally {
+          reevaluatingRef.current.delete(answer.id);
         }
       }
-    } else {
-      setQuestionIndex((prev) => prev + 1);
+    }
+
+    retryPendingEvaluations();
+    return () => { cancelled = true; };
+  }, [answers, question, summary]);
+
+  async function handleAnswerSubmitted({ transcript, visualConfidence }) {
+    setEvaluationError(null);
+    setIsTransitioning(true);
+    try {
+      const turn = await orchestratorRef.current.getNextTurn(transcript, visualConfidence);
+      const completedAnswer = withTurnId({ ...turn, question, visualConfidence }, transcript);
+      const completedAnswers = [...answers, completedAnswer];
+      setAnswers(completedAnswers);
+
+      if (turn.is_last_question) {
+        const completedSummary = buildInterviewSummary(completedAnswers);
+        setSummary(completedSummary);
+
+        if (auth?.userId && !auth?.isGuest && completedSummary.scoredTurnCount > 0) {
+          createSession({
+            userId: auth.userId,
+            role: `${interviewConfig.role} Mock Interview`,
+            finalScore: Math.round(completedSummary.overallScore * 10),
+          }).catch((err) => console.error('Failed to save session:', err));
+        }
+      } else {
+        setQuestion(turn.next_question);
+      }
+
+      return turn;
+    } catch (err) {
+      setEvaluationError(err.message || 'Could not evaluate your answer.');
+      throw err;
+    } finally {
+      setIsTransitioning(false);
     }
   }
 
-  // Session clock — runs for the whole interview, independent of the
-  // per-answer recording timer shown next to the controls.
-  useEffect(() => {
-    const interval = setInterval(() => setSessionSeconds((s) => s + 1), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (loadingQuestions) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 text-zinc-50">
-        <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
-        <p className="mt-3 text-sm text-zinc-500">Generating interview questions...</p>
-      </div>
-    );
-  }
+  const questionNumber = answers.length + 1;
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950 bg-grain text-zinc-50">
-      {/* Top bar */}
       <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
         <button
           onClick={() => navigate('/dashboard')}
@@ -106,95 +174,86 @@ export default function InterviewRoom() {
           <X className="h-4 w-4" strokeWidth={1.75} />
           Exit interview
         </button>
-        {!isFinished && (
+        {!summary && question && (
           <span className="font-data text-xs text-zinc-500">
-            Question {questionIndex + 1} of {questions.length}
+            Question {questionNumber} of {interviewConfig.totalQuestions}
           </span>
         )}
-        <span className="font-data w-16 text-right text-xs text-zinc-500">
-          {formatTime(sessionSeconds)}
-        </span>
+        <span className="font-data w-16 text-right text-xs text-zinc-500">{formatTime(sessionSeconds)}</span>
       </header>
 
-      {/* Split screen */}
       <div className="flex flex-1 flex-col lg:flex-row">
-        {/* Left: AI question + recording controls */}
         <section className="flex flex-1 flex-col justify-center border-b border-white/10 px-8 py-12 lg:w-[42%] lg:flex-none lg:border-b-0 lg:border-r lg:px-12">
-          {isFinished ? (
+          {summary ? (
+            <InterviewSummary summary={summary} onDone={() => navigate('/dashboard')} />
+          ) : isStarting ? (
             <div className="motion-safe:animate-fade-in">
-              <CheckCircle2 className="h-8 w-8 text-zinc-300" strokeWidth={1.5} />
-              <h1 className="mt-5 text-2xl font-semibold tracking-tight">That's a wrap.</h1>
-              <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">
-                Your interview is complete. The final score below is the average of all answers.
-              </p>
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Overall score</p>
-                <p className="mt-2 text-4xl font-semibold text-zinc-50">{finalReport?.overallScore}/100</p>
-              </div>
+              <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
+              <p className="mt-4 text-sm text-zinc-400">Preparing your first interview question...</p>
+            </div>
+          ) : startError ? (
+            <div className="motion-safe:animate-fade-in">
+              <AlertTriangle className="h-6 w-6 text-red-400" strokeWidth={1.75} />
+              <p className="mt-4 text-sm text-zinc-400">{startError}</p>
               <button
-                onClick={() => navigate('/dashboard')}
-                className="mt-8 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-zinc-200"
+                onClick={() => startInterview()}
+                className="mt-5 rounded-full border border-white/10 px-4 py-2 text-sm text-zinc-200 hover:border-white/20"
               >
-                Back to dashboard
+                Retry
               </button>
             </div>
           ) : (
-            <div key={questionIndex} className="motion-safe:animate-fade-in">
+            <div key={question} className="motion-safe:animate-fade-in">
               <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                AI Question
+                {interviewConfig.role} interview
               </span>
               <h1 className="mt-4 text-2xl font-medium leading-snug tracking-tight text-zinc-50 lg:text-[28px]">
-                {questions[questionIndex]}
+                {question}
               </h1>
               <p className="mt-4 text-sm text-zinc-500">
                 Speak naturally, as you would in a real interview. Aim for under two minutes.
               </p>
 
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                <AnswerRecorder question={questions[questionIndex]} onSubmit={handleAnswerSubmitted} />
+                <AnswerRecorder
+                  question={question}
+                  onSubmit={handleAnswerSubmitted}
+                  videoRef={videoRef}
+                  isTransitioning={isTransitioning}
+                />
               </div>
+
+              {evaluationError && (
+                <p className="mt-3 text-xs text-red-400">{evaluationError}</p>
+              )}
 
               {permissionState === 'denied' && (
                 <p className="mt-6 flex items-start gap-2 text-xs text-red-400/90">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-                  Camera and microphone access was blocked. Enable it in your browser's site
-                  settings and reload to answer.
+                  Camera and microphone access was blocked. Enable it in your browser's site settings and reload to answer.
                 </p>
               )}
             </div>
           )}
         </section>
 
-        {/* Right: live video feed */}
         <section className="relative flex flex-1 items-center justify-center bg-zinc-950 p-8 lg:p-12">
           <div className="relative aspect-video w-full max-w-2xl">
-            {isRecording && (
-              <div className="absolute -inset-3 rounded-[28px] bg-white/[0.06] blur-xl motion-safe:animate-breathe" />
-            )}
-
+            {isRecording && <div className="absolute -inset-3 rounded-[28px] bg-white/[0.06] blur-xl motion-safe:animate-breathe" />}
             <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-900">
-              <video
-                ref={videoRef}
-                autoPlay
-                muted
-                playsInline
-                className="h-full w-full scale-x-[-1] object-cover"
-              />
-
+              <video ref={videoRef} autoPlay muted playsInline className="h-full w-full scale-x-[-1] object-cover" />
               {permissionState === 'pending' && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900">
                   <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
-                  <span className="text-xs text-zinc-500">Requesting camera access…</span>
+                  <span className="text-xs text-zinc-500">Requesting camera access...</span>
                 </div>
               )}
-
               {permissionState === 'denied' && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900 px-6 text-center">
                   <AlertTriangle className="h-5 w-5 text-zinc-600" strokeWidth={1.5} />
                   <span className="text-xs text-zinc-500">Camera unavailable</span>
                 </div>
               )}
-
               {permissionState === 'granted' && (
                 <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-medium text-zinc-200 backdrop-blur">
                   <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
@@ -205,6 +264,10 @@ export default function InterviewRoom() {
           </div>
         </section>
       </div>
+
+      <footer className="border-t border-white/10 px-6 py-3 text-center">
+        <BuiltBy />
+      </footer>
     </div>
   );
 }
