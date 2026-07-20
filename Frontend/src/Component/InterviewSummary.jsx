@@ -75,7 +75,7 @@ export default function InterviewSummary({ summary, onDone }) {
       <h1 className="mt-5 text-2xl font-semibold tracking-tight">That&apos;s a wrap.</h1>
       <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">
         {hasScore
-          ? "Your overall score combines Gemini's evaluation of every scored answer."
+          ? 'Your final score is a comprehensive evaluation of your responses and delivery.'
           : 'Some answers are still being evaluated. Your score will update if feedback arrives shortly.'}
       </p>
       <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">

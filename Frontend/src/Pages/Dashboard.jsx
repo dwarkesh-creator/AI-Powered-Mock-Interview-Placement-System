@@ -50,7 +50,7 @@ export default function Dashboard() {
         <p className="text-sm text-zinc-500">{isGuest ? 'Welcome' : 'Welcome back'}</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-50">
           {isGuest
-            ? 'Try a mock interview — no account needed.'
+            ? 'Try a mock interview or chat with the career bot — no account needed. '
             : `${firstName} — here's where prep stands.`}
         </h1>
         {isGuest && (

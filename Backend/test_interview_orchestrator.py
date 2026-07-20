@@ -27,6 +27,14 @@ def test_interview_turn_uses_gemini_history_and_returns_structured_feedback(monk
         )
 
     monkeypatch.setattr(main, "_generate_gemini_interview_turn", fake_generate)
+    monkeypatch.setattr(
+        main,
+        "synthesize_interview_question",
+        lambda *args, **kwargs: {
+            "filename": "interview-question-test.wav",
+            "mouth_cues": [{"start": 0, "end": 0.5, "value": "X"}],
+        },
+    )
     client = TestClient(main.app)
     response = client.post(
         "/api/interview/next-turn",
@@ -42,6 +50,8 @@ def test_interview_turn_uses_gemini_history_and_returns_structured_feedback(monk
     assert response.status_code == 200
     assert response.json()["score"] == 0
     assert response.json()["next_question"] == "Tell me about a project you built."
+    assert response.json()["audio_url"] == "/api/interview/audio/interview-question-test.wav"
+    assert response.json()["mouth_cues"] == [{"start": 0, "end": 0.5, "value": "X"}]
     assert captured["api_key"] == "test-key"
     assert captured["history"] == [{"role": "user", "parts": [{"text": "[START_INTERVIEW]"}]}]
 

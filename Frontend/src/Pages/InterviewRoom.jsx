@@ -5,6 +5,7 @@ import { useInterviewRecorder } from '../Hooks/useInterviewRecorder.js';
 import { createSession } from '../Hooks/apiClient.js';
 import { useAuth } from '../Context/AuthContext.jsx';
 import AnswerRecorder from '../Component/AnswerRecorder.jsx';
+import Avatar2D from '../Component/Avatar2D.jsx';
 import InterviewSummary, { buildInterviewSummary } from '../Component/InterviewSummary.jsx';
 import BuiltBy from '../Component/BuiltBy.jsx';
 import { createInterviewOrchestrator } from '../services/interviewOrchestrator.js';
@@ -37,6 +38,7 @@ export default function InterviewRoom() {
   const orchestratorRef = useRef(null);
   const reevaluatingRef = useRef(new Set());
   const [question, setQuestion] = useState('');
+  const [questionAudio, setQuestionAudio] = useState(null);
   const [answers, setAnswers] = useState([]);
   const [summary, setSummary] = useState(null);
   const [sessionSeconds, setSessionSeconds] = useState(0);
@@ -44,6 +46,9 @@ export default function InterviewRoom() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [startError, setStartError] = useState(null);
   const [evaluationError, setEvaluationError] = useState(null);
+  const [interviewerAudioAnalyser, setInterviewerAudioAnalyser] = useState(null);
+  const [isInterviewerSpeaking, setIsInterviewerSpeaking] = useState(false);
+  const [isInterviewerListening, setIsInterviewerListening] = useState(false);
 
   const interviewConfig = useMemo(
     () => ({ ...DEFAULT_INTERVIEW_CONFIG, ...(location.state?.interviewConfig || {}) }),
@@ -64,6 +69,11 @@ export default function InterviewRoom() {
       if (!firstTurn.next_question) {
         throw new Error('The interview service did not return the first question.');
       }
+      setQuestionAudio({
+        audioUrl: firstTurn.audioUrl,
+        mouthCues: firstTurn.mouthCues || [],
+        audioError: firstTurn.audioError || null,
+      });
       setQuestion(firstTurn.next_question);
     } catch (err) {
       setStartError(err.message || 'Could not start the interview.');
@@ -150,6 +160,11 @@ export default function InterviewRoom() {
           }).catch((err) => console.error('Failed to save session:', err));
         }
       } else {
+        setQuestionAudio({
+          audioUrl: turn.audioUrl,
+          mouthCues: turn.mouthCues || [],
+          audioError: turn.audioError || null,
+        });
         setQuestion(turn.next_question);
       }
 
@@ -217,9 +232,13 @@ export default function InterviewRoom() {
               <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                 <AnswerRecorder
                   question={question}
+                  questionAudio={questionAudio}
                   onSubmit={handleAnswerSubmitted}
                   videoRef={videoRef}
                   isTransitioning={isTransitioning}
+                  onAudioAnalyserChange={setInterviewerAudioAnalyser}
+                  onInterviewerSpeakingChange={setIsInterviewerSpeaking}
+                  onListeningChange={setIsInterviewerListening}
                 />
               </div>
 
@@ -260,6 +279,11 @@ export default function InterviewRoom() {
                   LIVE
                 </span>
               )}
+              <Avatar2D
+                analyserNode={interviewerAudioAnalyser}
+                isSpeaking={isInterviewerSpeaking}
+                isListening={isInterviewerListening}
+              />
             </div>
           </div>
         </section>

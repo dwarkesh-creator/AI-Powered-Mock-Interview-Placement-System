@@ -1,0 +1,12 @@
+fastapi>=0.95
+pydantic>=1.10
+uvicorn>=0.20
+python-multipart>=0.0.9
+openai>=1.0
+anthropic>=1.0
+google-genai>=1.0.0
+python-dotenv>=1.0.0
+pytest>=7.0
+numpy
+scikit-learn
+tensorflow

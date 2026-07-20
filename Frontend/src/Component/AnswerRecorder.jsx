@@ -1,12 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import useConfidenceDetector from '../Hooks/useConfidenceDetector';
+import useQuestionAudio from '../Hooks/useQuestionAudio';
 import useSpeechToText from '../Hooks/useSpeechToText';
 import useTextToSpeech from '../Hooks/useTextToSpeech';
 
-function AnswerRecorder({ question, onSubmit, videoRef, isTransitioning = false }) {
+function AnswerRecorder({
+  question,
+  questionAudio,
+  onSubmit,
+  videoRef,
+  isTransitioning = false,
+  onAudioAnalyserChange,
+  onInterviewerSpeakingChange,
+  onListeningChange,
+}) {
   const { transcript, isListening, error, startListening, stopListening, resetTranscript } = useSpeechToText();
-  const { speak, stopSpeaking } = useTextToSpeech();
+  const {
+    audioAnalyser,
+    isPlaying,
+    playAudio,
+    stopAudio,
+  } = useQuestionAudio();
+  const { speak, stopSpeaking, isSpeaking } = useTextToSpeech();
   const { liveConfidence, averageConfidence, isTracking } = useConfidenceDetector(videoRef, isListening);
   const [status, setStatus] = useState('Preparing...');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -17,9 +33,11 @@ function AnswerRecorder({ question, onSubmit, videoRef, isTransitioning = false 
 
   const latest = useRef({});
   latest.current = {
-    speak,
     startListening,
     stopListening,
+    playAudio,
+    stopAudio,
+    speak,
     stopSpeaking,
     resetTranscript,
     onSubmit,
@@ -30,6 +48,20 @@ function AnswerRecorder({ question, onSubmit, videoRef, isTransitioning = false 
     question,
     transcript,
   };
+
+  useEffect(() => {
+    onAudioAnalyserChange?.(audioAnalyser);
+  }, [audioAnalyser, onAudioAnalyserChange]);
+
+  useEffect(() => {
+    onInterviewerSpeakingChange?.(isPlaying || isSpeaking);
+    return () => onInterviewerSpeakingChange?.(false);
+  }, [isPlaying, isSpeaking, onInterviewerSpeakingChange]);
+
+  useEffect(() => {
+    onListeningChange?.(isListening);
+    return () => onListeningChange?.(false);
+  }, [isListening, onListeningChange]);
 
   async function submitAnswer(finalText) {
     const text = finalText?.trim();
@@ -75,9 +107,33 @@ function AnswerRecorder({ question, onSubmit, videoRef, isTransitioning = false 
     let cancelled = false;
 
     async function beginQuestion() {
+      window.speechSynthesis?.cancel();
       setStatus('AI is speaking the question...');
-      await latest.current.speak(question, { rate: 1.02 });
+
+      const playback = await latest.current.playAudio(questionAudio?.audioUrl);
       if (cancelled) return;
+
+      if (!playback?.success) {
+        const backendReason = questionAudio?.audioError
+          ? ` Backend TTS error: ${questionAudio.audioError}`
+          : '';
+        const detail = playback?.message || 'Interviewer audio could not be loaded.';
+        console.error('[AnswerRecorder] Saved interviewer audio unavailable.', {
+          playback,
+          questionAudio,
+        });
+
+        if (latest.current.question) {
+          console.warn('[AnswerRecorder] Falling back to browser text-to-speech.');
+          setStatus('Saved voice unavailable — using browser speech instead...');
+          await latest.current.speak(latest.current.question, { rate: 1.02 });
+          if (cancelled) return;
+        } else {
+          setSubmissionError(`${detail}${backendReason}`);
+          setStatus('Interviewer audio unavailable.');
+          return;
+        }
+      }
 
       setStatus('Listening for your answer...');
       latest.current.startListening();
@@ -89,10 +145,12 @@ function AnswerRecorder({ question, onSubmit, videoRef, isTransitioning = false 
     return () => {
       cancelled = true;
       clearTimeout(silenceTimerRef.current);
+      window.speechSynthesis?.cancel();
       latest.current.stopSpeaking();
+      latest.current.stopAudio();
       latest.current.stopListening();
     };
-  }, [question]);
+  }, [question, questionAudio]);
 
   useEffect(() => {
     if (

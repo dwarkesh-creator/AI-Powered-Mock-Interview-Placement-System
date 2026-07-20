@@ -19,6 +19,7 @@ import os
 import sqlite3
 import sys
 import uuid
+import warnings
 from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -33,6 +34,7 @@ load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 try:
     from fastapi import FastAPI, HTTPException, status  # type: ignore
     from fastapi.middleware.cors import CORSMiddleware  # type: ignore
+    from fastapi.responses import FileResponse  # type: ignore
     from fastapi import UploadFile, File  # type: ignore
 except Exception:  # pragma: no cover - optional dev dependency
     class FastAPI:  # minimal shim for environments without fastapi
@@ -72,6 +74,10 @@ except Exception:  # pragma: no cover - optional dev dependency
     def File(*args, **kwargs):
         return None
 
+    class FileResponse:  # minimal placeholder for type annotation
+        def __init__(self, *args, **kwargs):
+            pass
+
 try:
     from pydantic import BaseModel, EmailStr, Field  # type: ignore
     HAS_PYDANTIC = True
@@ -97,6 +103,15 @@ try:
     from Backend.answer_grader import grade_answer  # type: ignore  # noqa: E402
 except ImportError:
     grade_answer = None
+
+try:
+    from Backend.tts_lipsync import (  # type: ignore  # noqa: E402
+        get_generated_audio_path,
+        synthesize_interview_question,
+    )
+except ImportError:
+    get_generated_audio_path = None
+    synthesize_interview_question = None
 
 try:
     from Ai_Module.llm.feedback_generator import generate_feedback  # type: ignore  # noqa: E402
@@ -195,7 +210,7 @@ app.add_middleware(
 
 
 # ── Schemas (dataclasses used for compatibility across environments) ──────────
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -282,6 +297,9 @@ class InterviewTurnResponse:
     improvements: List[str]
     next_question: str
     is_last_question: bool
+    audio_url: Optional[str] = None
+    mouth_cues: List[Dict[str, Any]] = field(default_factory=list)
+    audio_error: Optional[str] = None
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -766,6 +784,36 @@ def _generate_gemini_interview_turn(
     return _normalise_interview_response(payload, history, body.total_questions)
 
 
+def _attach_interview_audio(
+    turn: InterviewTurnResponse,
+    api_key: str,
+) -> InterviewTurnResponse:
+    """Attach saved Gemini TTS audio and Rhubarb cues without breaking a turn."""
+    if turn.is_last_question or not turn.next_question or synthesize_interview_question is None:
+        return turn
+
+    try:
+        audio = synthesize_interview_question(
+            turn.next_question,
+            api_key,
+            model=(os.environ.get("GEMINI_TTS_MODEL") or "gemini-3.1-flash-tts-preview").strip(),
+            voice=(os.environ.get("GEMINI_TTS_VOICE") or "Sadaltager").strip(),
+        )
+        filename = str(audio.get("filename") or "")
+        if filename:
+            turn.audio_url = f"/api/interview/audio/{filename}"
+        cues = audio.get("mouth_cues")
+        if isinstance(cues, list):
+            turn.mouth_cues = cues
+    except Exception as exc:
+        # Browser TTS remains the frontend fallback, so a TTS/Rhubarb failure must
+        # never prevent the interview from continuing — but surface the real error.
+        turn.audio_error = str(exc)
+        warnings.warn(f"Interview TTS/lip-sync unavailable: {exc}", RuntimeWarning)
+
+    return turn
+
+
 @app.post("/api/interview/next-turn", response_model=InterviewTurnResponse, tags=["ai"])
 def interview_next_turn(body: InterviewTurnRequest):
     history = _normalise_interview_history(body.history)
@@ -774,11 +822,23 @@ def interview_next_turn(body: InterviewTurnRequest):
         raise HTTPException(status_code=503, detail="Gemini API key is not configured.")
 
     try:
-        return _generate_gemini_interview_turn(gemini_key, history, body)
+        turn = _generate_gemini_interview_turn(gemini_key, history, body)
+        return _attach_interview_audio(turn, gemini_key)
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Gemini interview generation failed: {exc}") from exc
+
+
+@app.get("/api/interview/audio/{filename}", tags=["ai"])
+def get_interview_audio(filename: str):
+    if get_generated_audio_path is None:
+        raise HTTPException(status_code=503, detail="Interview audio service unavailable.")
+
+    audio_path = get_generated_audio_path(filename)
+    if audio_path is None or not audio_path.is_file():
+        raise HTTPException(status_code=404, detail="Interview audio was not found.")
+    return FileResponse(audio_path, media_type="audio/wav")
 
 
 @app.post("/api/generate-questions", response_model=QuestionResponse, tags=["ai"])

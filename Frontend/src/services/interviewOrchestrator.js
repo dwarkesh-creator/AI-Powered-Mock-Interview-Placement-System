@@ -6,6 +6,28 @@ function makeTurn(role, text) {
   return { role, parts: [{ text }] };
 }
 
+function normalizeMouthCues(cues) {
+  if (!Array.isArray(cues)) return [];
+
+  return cues.reduce((validCues, cue) => {
+    const start = Number(cue?.start);
+    const end = Number(cue?.end);
+    const value = String(cue?.value || '').toUpperCase();
+    if (Number.isFinite(start) && Number.isFinite(end) && end >= start && /^[A-HX]$/.test(value)) {
+      validCues.push({ start, end, value });
+    }
+    return validCues;
+  }, []);
+}
+
+function normalizeQuestionAudio(payload) {
+  return {
+    audioUrl: typeof payload?.audio_url === 'string' ? payload.audio_url : null,
+    mouthCues: normalizeMouthCues(payload?.mouth_cues),
+    audioError: typeof payload?.audio_error === 'string' ? payload.audio_error : null,
+  };
+}
+
 function buildInterviewDegradedFallback(payload) {
   const totalQuestions = payload.total_questions || 5;
   const history = payload.history || [];
@@ -23,6 +45,8 @@ function buildInterviewDegradedFallback(payload) {
       next_question: fallbackQuestions[0] || 'Tell me about yourself and a recent project.',
       is_last_question: false,
       pendingReEvaluation: false,
+      audioUrl: null,
+      mouthCues: [],
     };
   }
 
@@ -35,6 +59,8 @@ function buildInterviewDegradedFallback(payload) {
       : fallbackQuestions[answeredCount % fallbackQuestions.length],
     is_last_question: isLast,
     pendingReEvaluation: true,
+    audioUrl: null,
+    mouthCues: [],
   };
 }
 
@@ -51,6 +77,7 @@ function normalizeTurn(payload) {
       is_last_question: payload.is_last_question === true,
       degraded: true,
       pendingReEvaluation: payload.pendingReEvaluation === true,
+      ...normalizeQuestionAudio(payload),
     };
   }
 
@@ -75,6 +102,7 @@ function normalizeTurn(payload) {
     is_last_question: payload.is_last_question === true,
     degraded: false,
     pendingReEvaluation: false,
+    ...normalizeQuestionAudio(payload),
   };
 }
 
