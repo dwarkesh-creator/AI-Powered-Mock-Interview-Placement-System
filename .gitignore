@@ -48,3 +48,4 @@ recover*.py
 parse_*.py
 search_*.py
 recovered_*.txt
+.vercel
