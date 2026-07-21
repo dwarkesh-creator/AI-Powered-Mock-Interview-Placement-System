@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, BriefcaseBusiness } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, BriefcaseBusiness, Building2 } from 'lucide-react';
+import { getAllCompanies, getTopTechCompanies, getIndianServiceCompanies, getFinanceCompanies, getConsultingCompanies } from '../data/companies.js';
 
 const ROLE_GROUPS = [
   {
@@ -144,11 +145,23 @@ const DIFFICULTIES = [
 export default function InterviewSetup() {
   const navigate = useNavigate();
   const [selectedRoleId, setSelectedRoleId] = useState(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState('general');
   const [difficulty, setDifficulty] = useState('intermediate');
+  const [activeView, setActiveView] = useState('role'); // 'role' or 'company'
 
   const selectedRole = useMemo(
     () => ROLE_GROUPS.flatMap((group) => group.roles).find((role) => role.id === selectedRoleId),
     [selectedRoleId],
+  );
+
+  const topTechCompanies = useMemo(() => getTopTechCompanies(), []);
+  const indianCompanies = useMemo(() => getIndianServiceCompanies(), []);
+  const financeCompanies = useMemo(() => getFinanceCompanies(), []);
+  const consultingCompanies = useMemo(() => getConsultingCompanies(), []);
+  const allCompanies = useMemo(() => getAllCompanies(), []);
+  const selectedCompany = useMemo(
+    () => allCompanies.find((c) => c.id === selectedCompanyId),
+    [selectedCompanyId, allCompanies],
   );
 
   function startInterview() {
@@ -161,13 +174,14 @@ export default function InterviewSetup() {
           topic: selectedRole.focus,
           difficulty,
           totalQuestions: 5,
+          company: selectedCompany, // Pass company data
         },
       },
     });
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 bg-grain px-6 py-8 text-zinc-50 lg:px-12 lg:py-12">
+    <div className="min-h-screen bg-zinc-950 bg-grain px-6 py-8 pb-20 text-zinc-50 lg:px-12 lg:py-12 lg:pb-24">
       <div className="mx-auto max-w-6xl">
         <button
           type="button"
@@ -183,13 +197,47 @@ export default function InterviewSetup() {
             <BriefcaseBusiness className="h-5 w-5 text-zinc-300" strokeWidth={1.5} />
           </div>
           <p className="mt-5 text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">Interview setup</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Choose the role you want to practise.</h1>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">
+            Customize your interview experience
+          </h1>
           <p className="mt-3 text-sm leading-relaxed text-zinc-500">
-              Our AI-powered engine dynamically tailors all five questions and your final feedback to the role&apos;s core focus areas.
+            Select your target role and company to get tailored questions that match real interview patterns and evaluation criteria.
           </p>
         </header>
 
+        {/* View Toggle */}
         <section className="mt-10">
+          <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-1.5">
+            <button
+              type="button"
+              onClick={() => setActiveView('role')}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                activeView === 'role'
+                  ? 'bg-white text-black shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <BriefcaseBusiness className="h-4 w-4" strokeWidth={1.75} />
+              Target Role
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('company')}
+              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                activeView === 'company'
+                  ? 'bg-white text-black shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Building2 className="h-4 w-4" strokeWidth={1.75} />
+              Target Company
+            </button>
+          </div>
+        </section>
+
+        {/* Target Role View */}
+        {activeView === 'role' && (
+          <section className="mt-10">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="text-sm font-medium text-zinc-200">Target role</h2>
             <span className="text-xs text-zinc-500">Select one</span>
@@ -231,8 +279,170 @@ export default function InterviewSetup() {
             ))}
           </div>
         </section>
+        )}
 
-        <section className="mt-10 border-t border-white/10 pt-8">
+        {/* Target Company View */}
+        {activeView === 'company' && (
+          <section className="mt-10">
+          <div className="flex items-baseline justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03]">
+                <Building2 className="h-4 w-4 text-zinc-300" strokeWidth={1.5} />
+              </div>
+              <h2 className="text-sm font-medium text-zinc-200">Target Company</h2>
+            </div>
+            <span className="text-xs text-zinc-500">Choose interview style</span>
+          </div>
+          <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+            Practice with company-specific interview patterns. Each company has unique question styles and evaluation criteria.
+          </p>
+
+          {/* Top Tech Companies */}
+          <div className="mt-6">
+            <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">Top Tech Giants</h3>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {topTechCompanies.map((company) => {
+                const selected = selectedCompanyId === company.id;
+                return (
+                  <button
+                    key={company.id}
+                    type="button"
+                    onClick={() => setSelectedCompanyId(company.id)}
+                    aria-pressed={selected}
+                    className={`group relative rounded-xl border p-3.5 text-left transition-all ${
+                      selected
+                        ? 'border-white bg-white text-black shadow-lg'
+                        : 'border-white/10 bg-white/[0.02] text-zinc-200 hover:border-white/25 hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    {selected && (
+                      <span className="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-black text-white">
+                        <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
+                      </span>
+                    )}
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">{company.logo}</span>
+                      <div className="flex-1 pr-5">
+                        <p className="text-sm font-semibold">{company.displayName}</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Finance & Consulting Combined */}
+          <div className="mt-5">
+            <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">Finance & Consulting</h3>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[...financeCompanies, ...consultingCompanies].map((company) => {
+                const selected = selectedCompanyId === company.id;
+                return (
+                  <button
+                    key={company.id}
+                    type="button"
+                    onClick={() => setSelectedCompanyId(company.id)}
+                    aria-pressed={selected}
+                    className={`group relative rounded-xl border p-3.5 text-left transition-all ${
+                      selected
+                        ? 'border-white bg-white text-black shadow-lg'
+                        : 'border-white/10 bg-white/[0.02] text-zinc-200 hover:border-white/25 hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    {selected && (
+                      <span className="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-black text-white">
+                        <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
+                      </span>
+                    )}
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">{company.logo}</span>
+                      <div className="flex-1 pr-5">
+                        <p className="text-sm font-semibold">{company.displayName}</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Indian IT Services */}
+          <div className="mt-5">
+            <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">Indian IT Services</h3>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {indianCompanies.map((company) => {
+                const selected = selectedCompanyId === company.id;
+                return (
+                  <button
+                    key={company.id}
+                    type="button"
+                    onClick={() => setSelectedCompanyId(company.id)}
+                    aria-pressed={selected}
+                    className={`group relative rounded-xl border p-3.5 text-left transition-all ${
+                      selected
+                        ? 'border-white bg-white text-black shadow-lg'
+                        : 'border-white/10 bg-white/[0.02] text-zinc-200 hover:border-white/25 hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    {selected && (
+                      <span className="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-black text-white">
+                        <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
+                      </span>
+                    )}
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">{company.logo}</span>
+                      <div className="flex-1 pr-5">
+                        <p className="text-sm font-semibold">{company.displayName}</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* General Practice */}
+          <div className="mt-5">
+            <h3 className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">General</h3>
+            <div className="mt-3">
+              {(() => {
+                const company = allCompanies.find((c) => c.id === 'general');
+                const selected = selectedCompanyId === 'general';
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCompanyId('general')}
+                    aria-pressed={selected}
+                    className={`group relative w-full rounded-xl border p-3.5 text-left transition-all sm:w-auto ${
+                      selected
+                        ? 'border-white bg-white text-black shadow-lg'
+                        : 'border-white/10 bg-white/[0.02] text-zinc-200 hover:border-white/25 hover:bg-white/[0.04]'
+                    }`}
+                  >
+                    {selected && (
+                      <span className="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-black text-white">
+                        <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
+                      </span>
+                    )}
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-2xl">{company.logo}</span>
+                      <div className="flex-1 pr-5">
+                        <p className="text-sm font-semibold">{company.displayName}</p>
+                        <p className={`mt-0.5 text-[10px] ${selected ? 'text-zinc-600' : 'text-zinc-500'}`}>
+                          Balanced interview preparation
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })()}
+            </div>
+          </div>
+        </section>
+        )}
+
+        <section className="mt-8 border-t border-white/10 pt-8">
           <h2 className="text-sm font-medium text-zinc-200">Difficulty</h2>
           <div className="mt-4 grid gap-3 md:grid-cols-3">
             {DIFFICULTIES.map((option) => {
@@ -257,9 +467,11 @@ export default function InterviewSetup() {
           </div>
         </section>
 
-        <div className="sticky bottom-0 mt-10 flex items-center justify-between gap-4 border-t border-white/10 bg-zinc-950/95 py-5 backdrop-blur">
+        <div className="mt-10 flex items-center justify-between gap-4 border-t border-white/10 bg-zinc-950 py-5">
           <p className="hidden text-sm text-zinc-500 sm:block">
-            {selectedRole ? `${selectedRole.title} · ${difficulty}` : 'Choose a role to continue'}
+            {selectedRole && selectedCompany
+              ? `${selectedRole.title} · ${selectedCompany.displayName} · ${difficulty}`
+              : 'Choose a role to continue'}
           </p>
           <button
             type="button"

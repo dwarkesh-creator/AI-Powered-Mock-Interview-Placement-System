@@ -105,7 +105,7 @@ except ImportError:
     grade_answer = None
 
 try:
-    from Backend.tts_lipsync import (  # type: ignore  # noqa: E402
+    from tts_lipsync import (  # type: ignore  # noqa: E402
         get_generated_audio_path,
         synthesize_interview_question,
     )
@@ -288,6 +288,10 @@ class InterviewTurnRequest:
     history: Optional[List[Dict[str, Any]]] = None
     visual_confidence: Optional[float] = None
     model: Optional[str] = None
+    company_id: Optional[str] = None
+    company_name: Optional[str] = None
+    company_style: Optional[str] = None
+    company_focus_areas: Optional[List[str]] = None
 
 
 @dataclass
@@ -675,11 +679,91 @@ def _interview_system_instruction(body: InterviewTurnRequest, history: List[Dict
         except (TypeError, ValueError):
             pass
 
-    return (
+    # Build company-specific context
+    company_context = ""
+    if body.company_name and body.company_name.lower() != "general":
+        company_context = f"\n\nIMPORTANT: This is a {body.company_name} interview simulation."
+        
+        if body.company_style:
+            company_context += f" {body.company_name} is known for {body.company_style} interview style."
+        
+        if body.company_focus_areas and len(body.company_focus_areas) > 0:
+            focus_list = ", ".join(body.company_focus_areas[:4])
+            company_context += f" Key focus areas include: {focus_list}."
+        
+        # Company-specific instructions
+        company_id = (body.company_id or "").lower()
+        if company_id == "google":
+            company_context += (
+                " Ask questions that test algorithmic thinking, system design, and Googleyness. "
+                "Encourage the candidate to think aloud and consider scalability. "
+                "Look for structured problem-solving and Big O analysis."
+            )
+        elif company_id == "microsoft":
+            company_context += (
+                " Focus on technical depth, design patterns, and coding best practices. "
+                "Ask about trade-offs and architectural decisions. "
+                "Evaluate code quality and attention to detail."
+            )
+        elif company_id == "amazon":
+            company_context += (
+                " Frame behavioral questions around Amazon's Leadership Principles. "
+                "Ask for specific examples using the STAR format (Situation, Task, Action, Result). "
+                "Look for customer obsession and ownership examples."
+            )
+        elif company_id == "tcs":
+            company_context += (
+                " Include questions on CS fundamentals (OS, DBMS, Networks), aptitude, and logical reasoning. "
+                "Assess communication skills and willingness to learn. "
+                "Keep technical questions at beginner to intermediate level."
+            )
+        elif company_id == "infosys":
+            company_context += (
+                " Test problem-solving ability, programming fundamentals, and analytical thinking. "
+                "Include simple coding logic and puzzle-solving questions. "
+                "Evaluate communication clarity and positive attitude."
+            )
+        elif company_id == "wipro":
+            company_context += (
+                " Ask about technical fundamentals, project experience, and domain knowledge. "
+                "Focus on communication skills and professional demeanor. "
+                "Include questions about career goals and learning approach."
+            )
+        elif company_id == "jpmorgan":
+            company_context += (
+                " Combine technical coding with financial domain knowledge. "
+                "Ask about system design for trading/banking systems. "
+                "Evaluate understanding of risk management and market concepts. "
+                "Look for attention to detail and business acumen."
+            )
+        elif company_id == "goldman":
+            company_context += (
+                " Include challenging algorithmic problems and brain teasers. "
+                "Test quantitative reasoning and analytical thinking. "
+                "Ask about low-latency systems and optimization. "
+                "Evaluate market knowledge and strategic thinking."
+            )
+        elif company_id == "deloitte":
+            company_context += (
+                " Include case study analysis and problem-solving scenarios. "
+                "Test business acumen and consulting frameworks. "
+                "Evaluate structured thinking and communication. "
+                "Ask about technology consulting experiences."
+            )
+        elif company_id == "accenture":
+            company_context += (
+                " Focus on technology consulting and digital transformation. "
+                "Test emerging technology knowledge and innovation mindset. "
+                "Evaluate client communication and adaptability. "
+                "Ask about learning agility and value delivery."
+            )
+
+    base_instruction = (
         "You are conducting a friendly, realistic mock interview. "
         f"The candidate is interviewing for {body.role}. Focus area: {body.topic or body.role}. "
         f"Difficulty: {body.difficulty}. The interview has exactly {total_questions} questions. "
-        f"The candidate has answered {answer_count} question(s) so far.{visual_context}\n\n"
+        f"The candidate has answered {answer_count} question(s) so far.{visual_context}"
+        f"{company_context}\n\n"
         "The contents array is the full conversation history. Its first user message may be "
         "'[START_INTERVIEW]', which means the candidate has not answered yet. "
         "For every answered question, evaluate the immediately previous candidate answer. "
@@ -694,6 +778,8 @@ def _interview_system_instruction(body: InterviewTurnRequest, history: List[Dict
         "For a visual estimate, feedback may briefly address observable delivery, but never make medical, "
         "personality, or emotion claims."
     )
+    
+    return base_instruction
 
 
 def _normalise_interview_response(
@@ -831,6 +917,7 @@ def interview_next_turn(body: InterviewTurnRequest):
 
 
 @app.get("/api/interview/audio/{filename}", tags=["ai"])
+@app.head("/api/interview/audio/{filename}", tags=["ai"])
 def get_interview_audio(filename: str):
     if get_generated_audio_path is None:
         raise HTTPException(status_code=503, detail="Interview audio service unavailable.")

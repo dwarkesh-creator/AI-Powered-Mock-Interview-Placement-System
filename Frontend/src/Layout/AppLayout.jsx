@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../Component/Sidebar.jsx';
+import BuiltBy from '../Component/BuiltBy.jsx';
 
 /**
  * Shell shared by every authenticated page except the interview room.
@@ -9,10 +10,15 @@ import Sidebar from '../Component/Sidebar.jsx';
  */
 export default function AppLayout() {
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 lg:flex">
+    <div className="flex min-h-screen flex-col bg-zinc-950 text-zinc-50 lg:flex-row">
       <Sidebar />
-      <main className="flex-1 pb-20 lg:pb-0">
-        <Outlet />
+      <main className="flex flex-1 flex-col pb-20 lg:pb-0">
+        <div className="flex-1">
+          <Outlet />
+        </div>
+        <footer className="border-t border-white/10 px-6 py-6 text-center lg:px-12">
+          <BuiltBy variant="footer" />
+        </footer>
       </main>
     </div>
   );

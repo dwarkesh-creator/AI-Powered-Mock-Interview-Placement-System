@@ -219,9 +219,28 @@ export default function InterviewRoom() {
             </div>
           ) : (
             <div key={question} className="motion-safe:animate-fade-in">
-              <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                {interviewConfig.role} interview
-              </span>
+              <div className="flex items-center gap-3">
+                {interviewConfig.company && interviewConfig.company.id !== 'general' && (
+                  <div
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-2xl"
+                    title={interviewConfig.company.displayName}
+                  >
+                    {interviewConfig.company.logo}
+                  </div>
+                )}
+                <div className="flex-1">
+                  <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                    {interviewConfig.company && interviewConfig.company.id !== 'general'
+                      ? `${interviewConfig.company.displayName} · ${interviewConfig.role} Interview`
+                      : `${interviewConfig.role} Interview`}
+                  </span>
+                  {interviewConfig.company && interviewConfig.company.id !== 'general' && (
+                    <p className="mt-0.5 text-[10px] text-zinc-600">
+                      {interviewConfig.company.interviewStyle} style
+                    </p>
+                  )}
+                </div>
+              </div>
               <h1 className="mt-4 text-2xl font-medium leading-snug tracking-tight text-zinc-50 lg:text-[28px]">
                 {question}
               </h1>

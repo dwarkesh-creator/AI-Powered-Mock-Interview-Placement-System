@@ -3,16 +3,17 @@ import { AuthProvider, useAuth } from './Context/AuthContext.jsx';
 import AppLayout from './Layout/AppLayout.jsx';
 import Login from './Pages/Login.jsx';
 import Dashboard from './Pages/Dashboard.jsx';
+import Analytics from './Pages/Analytics.jsx';
 import InterviewRoom from './Pages/InterviewRoom.jsx';
 import PlacementBot from './Pages/PlacementBot.jsx';
 import InterviewSetup from './Pages/InterviewSetup.jsx';
 
 /**
- * Redirects to /login if no auth token is present.
+ * Redirects to /login if no auth token is present (except for guest access).
  */
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, allowGuest = false }) {
   const { auth } = useAuth();
-  if (!auth?.token) return <Navigate to="/login" replace />;
+  if (!auth?.token && !allowGuest) return <Navigate to="/login" replace />;
   return children;
 }
 
@@ -30,19 +31,20 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
 
-        <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+        <Route element={<ProtectedRoute allowGuest={true}><AppLayout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/placement" element={<PlacementBot />} />
         </Route>
 
         <Route
           path="/interview-setup"
-          element={<ProtectedRoute><InterviewSetup /></ProtectedRoute>}
+          element={<ProtectedRoute allowGuest={true}><InterviewSetup /></ProtectedRoute>}
         />
 
         <Route
           path="/interview"
-          element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>}
+          element={<ProtectedRoute allowGuest={true}><InterviewRoom /></ProtectedRoute>}
         />
 
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

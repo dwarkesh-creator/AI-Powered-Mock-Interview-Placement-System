@@ -1,0 +1,8 @@
+# Place model_with_visemes.glb in this directory
+# The GLB file should be a Ready Player Me-style avatar with:
+# - Full ARKit blendshapes (66 morph targets on AvatarHead mesh)
+# - Oculus viseme set (viseme_sil, viseme_PP, viseme_FF, etc.)
+# - LeftEye and RightEye bones for gaze tracking
+# 
+# After placing the file, run: npm run optimize-avatar
+# This creates model_with_visemes_optimized.glb with Draco compression

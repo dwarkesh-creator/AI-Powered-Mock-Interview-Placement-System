@@ -108,7 +108,7 @@ function AnswerRecorder({
 
     async function beginQuestion() {
       window.speechSynthesis?.cancel();
-      setStatus('AI is speaking the question...');
+      setStatus('NilGen is speaking the question...');
 
       const playback = await latest.current.playAudio(questionAudio?.audioUrl);
       if (cancelled) return;

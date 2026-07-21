@@ -2,3 +2,46 @@ node_modules
 .env
 Backend/bin/rhubarb/
 Backend/generated_audio/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Database
+*.db
+*.db-journal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Build artifacts
+dist/
+build/
+*.log
+
+# Temporary files
+*.tmp
+tmp_*.py
+recover*.py
+parse_*.py
+search_*.py
+recovered_*.txt

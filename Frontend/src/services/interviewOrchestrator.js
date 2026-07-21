@@ -125,6 +125,7 @@ export function createInterviewOrchestrator({
   topic = '',
   difficulty = 'medium',
   totalQuestions = 5,
+  company = null,
 } = {}) {
   let history = [];
 
@@ -136,6 +137,14 @@ export function createInterviewOrchestrator({
       total_questions: totalQuestions,
       history: historySlice,
     };
+
+    // Add company-specific data if provided
+    if (company && company.id) {
+      payload.company_id = company.id;
+      payload.company_name = company.displayName || company.name;
+      payload.company_style = company.interviewStyle;
+      payload.company_focus_areas = company.focusAreas;
+    }
 
     if (Number.isFinite(Number(visualConfidence))) {
       payload.visual_confidence = Math.min(100, Math.max(0, Number(visualConfidence)));

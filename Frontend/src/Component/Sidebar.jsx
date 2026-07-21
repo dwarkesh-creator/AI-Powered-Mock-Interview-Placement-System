@@ -1,9 +1,10 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Video, Target, LogOut, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Video, Target, LogOut, Sparkles, BarChart3 } from 'lucide-react';
 import { useAuth } from '../Context/AuthContext.jsx';
 
 const NAV_ITEMS = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/interview', label: 'Interview', icon: Video },
   { to: '/placement', label: 'Placement', icon: Target },
 ];

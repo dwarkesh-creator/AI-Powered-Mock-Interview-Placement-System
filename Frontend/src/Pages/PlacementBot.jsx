@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Send, Plus, Sparkles } from 'lucide-react';
 import ChatBubble from '../Component/ChatBubble.jsx';
-import BuiltBy from '../Component/BuiltBy.jsx';
 import { chatWithBot } from '../Hooks/apiClient.js';
 import {
   targetRoles,
@@ -262,10 +261,6 @@ export default function PlacementBot() {
           </form>
         </div>
       </div>
-
-      <footer className="mt-6 border-t border-white/10 pt-4 text-center">
-        <BuiltBy />
-      </footer>
     </div>
   );
 }

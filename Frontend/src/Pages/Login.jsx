@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ArrowRight, Loader2, UserRound } from 'lucide-react';
 import { useAuth } from '../Context/AuthContext.jsx';
+import BuiltBy from '../Component/BuiltBy.jsx';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -147,6 +148,10 @@ export default function Login() {
         <p className="mt-2 text-center text-xs text-zinc-600">
           Try the mock interview without creating an account
         </p>
+
+        <div className="mt-8 text-center">
+          <BuiltBy variant="footer" />
+        </div>
       </div>
     </div>
   );
