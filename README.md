@@ -105,10 +105,10 @@ NilGen provides:
 - **Uvicorn** - ASGI server
 
 ### AI/ML Components
-- **Google Gemini** - Advanced LLM for chat, question generation, and natural TTS
-- **OpenCV** - Computer vision for confidence analysis
-- **TensorFlow** - Emotion detection model
-- **Scikit-learn** - NLP for answer grading
+- **Large Language Model (LLM)** - Advanced AI for intelligent chat, dynamic question generation, and natural speech synthesis
+- **OpenCV** - Computer vision for real-time confidence analysis
+- **TensorFlow** - Deep learning model for emotion detection
+- **Scikit-learn** - Natural language processing for answer evaluation
 - **Rhubarb Lip Sync** - Phoneme extraction for realistic avatar animation
 
 ### DevOps
@@ -164,7 +164,7 @@ NilGen provides:
 - **Node.js** 18+ and npm
 - **Python** 3.11+
 - **Git**
-- **Google Gemini API Key** ([Get it here](https://aistudio.google.com/app/apikey))
+- **AI API Key** - For LLM and TTS capabilities ([Setup Guide](https://aistudio.google.com/app/apikey))
 
 ### Step 1: Clone Repository
 ```bash
@@ -186,7 +186,7 @@ pip install -r requirements.txt
 # Create .env file
 cp .env.example .env
 
-# Edit .env and add your Gemini API key
+# Edit .env and add your API key for LLM and TTS services
 # GEMINI_API_KEY=your_api_key_here
 # GEMINI_MODEL=gemini-3.1-flash-lite
 # GEMINI_TTS_VOICE=Orbit
@@ -373,7 +373,7 @@ AI-Powered-Mock-Interview-Placement-System/
 ### Backend Environment Variables
 ```env
 # Required
-GEMINI_API_KEY=your_gemini_api_key
+GEMINI_API_KEY=your_api_key_here
 
 # Optional (defaults shown)
 GEMINI_MODEL=gemini-3.1-flash-lite
@@ -381,11 +381,12 @@ GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview
 GEMINI_TTS_VOICE=Orbit
 ```
 
-### Voice Options
-- **Orbit** (default) - Neutral male, best for Indian accent
-- **Charon** - Mature, authoritative male
-- **Fenrir** - Deep, commanding male
-- **Sadaltager** - Professional female
+### Voice Configuration Options
+The system supports multiple AI voice profiles for the interviewer:
+- **Orbit** (default) - Neutral professional male voice, optimized for Indian-English accent
+- **Charon** - Mature, authoritative male voice
+- **Fenrir** - Deep, commanding male voice
+- **Sadaltager** - Professional female voice
 
 ---
 
@@ -433,20 +434,22 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Google Gemini API** - For powerful LLM and TTS
-- **Rhubarb Lip Sync** - For phoneme extraction
-- **React Community** - For amazing libraries
-- **FastAPI** - For excellent documentation
-- **My College** - For project support
+- **Open Source LLM APIs** - For powerful language models and text-to-speech
+- **Rhubarb Lip Sync** - For phoneme extraction technology
+- **React Community** - For exceptional UI libraries and tools
+- **FastAPI** - For comprehensive documentation and fast web framework
+- **My College** - For project guidance and support
 
 ---
 
 ## 📚 References
 
-- [Google Gemini Documentation](https://ai.google.dev/docs)
+- [Modern LLM APIs Documentation](https://ai.google.dev/docs)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [React Documentation](https://react.dev/)
 - [Rhubarb Lip Sync](https://github.com/DanielSWolf/rhubarb-lip-sync)
+- [OpenCV Documentation](https://docs.opencv.org/)
+- [TensorFlow Guides](https://www.tensorflow.org/)
 
 ---
 
