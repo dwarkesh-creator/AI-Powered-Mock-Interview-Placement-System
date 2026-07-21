@@ -53,6 +53,20 @@ NilGen provides:
 - **2D Animated Avatar** - Lip-synced responses with phoneme-accurate animation
 - **Speech Recognition** - Real-time transcription of candidate answers
 - **Video Analysis** - Computer vision-based confidence assessment
+- **Adaptive Question Flow** - AI generates contextual follow-up questions based on your responses
+
+### 🧠 Intelligent Interview System
+- **Context-Aware AI Interviewer** - Maintains full conversation history and adapts questions dynamically
+- **Multi-Turn Intelligence** - AI analyzes your answers and asks progressively deeper questions on topics you demonstrate expertise in
+- **Company-Specific Interview Patterns**:
+  - **Google** - Algorithmic thinking, system design, Googleyness assessment
+  - **Amazon** - Behavioral questions using STAR format, Leadership Principles focus
+  - **Microsoft** - Technical depth, design patterns, architectural trade-offs
+  - **TCS/Infosys/Wipro** - CS fundamentals, aptitude, communication skills
+  - **Goldman Sachs/JP Morgan** - Quantitative reasoning, financial domain knowledge
+  - **And 5+ more companies** with unique interview styles
+- **Dynamic Question Generation** - Questions tailored to your role, skills, and resume
+- **Real-Time Answer Evaluation** - Instant scoring with detailed improvement suggestions
 
 ### 📊 Intelligent Feedback System
 - **Multi-dimensional Analysis**:
@@ -105,7 +119,11 @@ NilGen provides:
 - **Uvicorn** - ASGI server
 
 ### AI/ML Components
-- **Large Language Model (LLM)** - Advanced AI for intelligent chat, dynamic question generation, and natural speech synthesis
+- **Large Language Model (LLM)** - Powers intelligent conversation, adaptive questioning, and natural speech
+  - **Conversational Intelligence**: Maintains context across multiple turns, generating follow-up questions based on previous answers
+  - **Adaptive Interview Flow**: Dynamically adjusts question difficulty and topic based on candidate expertise
+  - **Company-Specific Simulation**: Replicates interview styles of Google, Amazon, Microsoft, TCS, and 10+ other companies
+  - **Natural Speech Synthesis**: Converts interview questions to lifelike speech with configurable accents
 - **Natural Language Processing (NLP)**:
   - **Scikit-learn** - TF-IDF vectorization and cosine similarity for answer grading
   - **NLTK** - Text preprocessing and tokenization
