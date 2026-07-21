@@ -106,10 +106,23 @@ NilGen provides:
 
 ### AI/ML Components
 - **Large Language Model (LLM)** - Advanced AI for intelligent chat, dynamic question generation, and natural speech synthesis
-- **OpenCV** - Computer vision for real-time confidence analysis
-- **TensorFlow** - Deep learning model for emotion detection
-- **Scikit-learn** - Natural language processing for answer evaluation
-- **Rhubarb Lip Sync** - Phoneme extraction for realistic avatar animation
+- **Natural Language Processing (NLP)**:
+  - **Scikit-learn** - TF-IDF vectorization and cosine similarity for answer grading
+  - **NLTK** - Text preprocessing and tokenization
+  - Keyword extraction and semantic matching
+- **Computer Vision**:
+  - **OpenCV** - Real-time face detection and tracking
+  - **TensorFlow** - Deep learning for emotion detection
+  - Gaze estimation for eye contact analysis
+  - Head movement tracking for steadiness scoring
+- **Speech Processing**:
+  - **Speech Recognition API** - Real-time audio transcription
+  - **Text-to-Speech (TTS)** - Natural voice synthesis with multiple accents
+  - **Rhubarb Lip Sync** - Phoneme extraction for realistic avatar animation
+- **Machine Learning Models**:
+  - Pre-trained emotion detection model (quantized TFLite)
+  - Custom NLP model for technical answer evaluation
+  - Confidence scoring algorithms
 
 ### DevOps
 - **Git** - Version control
