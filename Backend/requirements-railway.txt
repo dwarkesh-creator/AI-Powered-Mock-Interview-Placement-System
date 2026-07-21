@@ -15,7 +15,5 @@ numpy>=1.26.0
 tensorflow-cpu>=2.16.0
 
 # ── LLM providers (optional — set API keys in environment) ────────────────────
-anthropic>=0.25.0
-openai>=1.14.0
 google-genai>=1.0.0
 python-dotenv>=1.0.0
