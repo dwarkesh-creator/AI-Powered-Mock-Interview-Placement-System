@@ -14,10 +14,10 @@
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [System Architecture](#system-architecture)
-- [Installation](#installation)
-- [Usage](#usage)
 - [Screenshots](#screenshots)
 - [Project Structure](#project-structure)
+- [Key Features Implementation](#key-features-implementation)
+- [Configuration](#configuration)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -69,10 +69,10 @@ NilGen provides:
 - **Progress Tracking** - Measure improvement
 
 ### 🤖 AI Career Bot
-- **24/7 Placement Guidance** - Gemini-powered chatbot
+- **24/7 Placement Guidance** - AI-powered conversational chatbot
 - **Personalized Advice** - Based on your skills and target role
 - **Company-specific Prep** - Insights for top tech companies
-- **CGPA-aware Recommendations** - Tailored to your academic profile
+- **Academic-aware Recommendations** - Tailored guidance
 
 ### 🎨 Modern UI/UX
 - **Dark Theme** - Easy on the eyes
@@ -164,7 +164,7 @@ NilGen provides:
 - **Node.js** 18+ and npm
 - **Python** 3.11+
 - **Git**
-- **AI API Key** - For LLM and TTS capabilities ([Setup Guide](https://aistudio.google.com/app/apikey))
+- **LLM API Key** - For AI language model and text-to-speech capabilities
 
 ### Step 1: Clone Repository
 ```bash
@@ -186,10 +186,10 @@ pip install -r requirements.txt
 # Create .env file
 cp .env.example .env
 
-# Edit .env and add your API key for LLM and TTS services
-# GEMINI_API_KEY=your_api_key_here
-# GEMINI_MODEL=gemini-3.1-flash-lite
-# GEMINI_TTS_VOICE=Orbit
+# Edit .env and add your LLM API key
+# API_KEY=your_api_key_here
+# MODEL=your_model_name
+# TTS_VOICE=preferred_voice
 ```
 
 ### Step 3: Frontend Setup
@@ -355,13 +355,14 @@ AI-Powered-Mock-Interview-Placement-System/
 - Weighted scoring algorithm
 
 ### Text-to-Speech + Lip Sync
-- **Gemini TTS** for natural voice
+- **AI-powered TTS** for natural voice generation
 - **Rhubarb Lip Sync** for phoneme extraction
 - Real-time mouth shape animation
 - Configurable voice (male/female, accent)
+- Configurable voice (male/female, accent)
 
 ### Career Guidance Bot
-- Context-aware responses
+- Context-aware responses using advanced LLM
 - Conversation history maintenance
 - Role-specific recommendations
 - CGPA and skills-based advice
@@ -372,13 +373,13 @@ AI-Powered-Mock-Interview-Placement-System/
 
 ### Backend Environment Variables
 ```env
-# Required
-GEMINI_API_KEY=your_api_key_here
+# Required - Your LLM API credentials
+API_KEY=your_api_key_here
 
 # Optional (defaults shown)
-GEMINI_MODEL=gemini-3.1-flash-lite
-GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview
-GEMINI_TTS_VOICE=Orbit
+MODEL=your_preferred_model
+TTS_MODEL=your_tts_model
+TTS_VOICE=preferred_voice
 ```
 
 ### Voice Configuration Options
