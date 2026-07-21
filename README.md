@@ -1,6 +1,6 @@
-# 🎯 NilGen - AI-Powered Mock Interview & Placement System
+# 🎯 NilGen - AI-Powered Mock Interview, Career Chatbot & Placement System
 
-> **BTech 3rd Year Project** | AI-powered interview preparation platform with realistic mock interviews, intelligent feedback, and placement guidance
+> **BTech 3rd Year Project** | Complete interview preparation platform with AI mock interviews, real-time feedback, performance analytics, and 24/7 career guidance chatbot
 
 [![Made with React](https://img.shields.io/badge/React-18.0-blue.svg)](https://reactjs.org/)
 [![Python](https://img.shields.io/badge/Python-3.11-green.svg)](https://www.python.org/)
@@ -26,21 +26,23 @@
 
 ## 🎓 About
 
-**NilGen** is an AI-powered mock interview and placement preparation system designed to help students and job seekers practice for technical interviews in a realistic, stress-free environment. The system uses advanced NLP, computer vision, and large language models to provide personalized feedback and guidance.
+**NilGen** is a comprehensive AI-powered mock interview and career preparation system designed to help students and job seekers excel in technical interviews. The platform combines realistic interview simulations, intelligent feedback analysis, and an AI career chatbot to provide end-to-end placement preparation support.
 
 ### Problem Statement
 Students often struggle with interview preparation due to:
 - Lack of realistic practice environments
 - No immediate feedback on performance
 - Difficulty in identifying improvement areas
-- Limited access to personalized guidance
+- Limited access to personalized career guidance
+- Uncertainty about company-specific interview patterns
 
 ### Solution
 NilGen provides:
 - **Realistic mock interviews** with AI-powered voice interviewer
 - **Real-time feedback** on confidence, correctness, and communication
 - **Personalized analytics** tracking progress over time
-- **Career guidance chatbot** for placement preparation
+- **24/7 AI Career Chatbot** for instant placement guidance and advice
+- **Company-specific insights** for targeted preparation
 
 ---
 
