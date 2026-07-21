@@ -154,8 +154,8 @@ NilGen provides:
 ┌───────▼─────────────▼─────────────▼─────────────▼──────────┐
 │                    AI/ML Layer                               │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
-│  │ Gemini   │  │  NLP     │  │ Vision   │  │   TTS    │   │
-│  │   LLM    │  │ Grader   │  │ Analyzer │  │+ Lipsync │   │
+│  │   LLM    │  │  NLP     │  │ Vision   │  │   TTS    │   │
+│  │  Model   │  │ Grader   │  │ Analyzer │  │+ Lipsync │   │
 │  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
 └─────────────────────────────────────────────────────────────┘
         │             │             │             │
@@ -420,7 +420,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - GitHub: [@dwarkesh-creator](https://github.com/dwarkesh-creator)
 - Email: dwarkeshrathore123@gmail.com
-- LinkedIn: [Dwarkesh Rathore](https://linkedin.com/in/dwarkesh-rathore)
+- LinkedIn: [Dwarkesh Rathore](https://www.linkedin.com/in/dwarkesh-rathore-50a844297/)
 
 ---
 
@@ -471,6 +471,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 For issues and questions:
 - Open an [Issue](https://github.com/dwarkesh-creator/AI-Powered-Mock-Interview-Placement-System/issues)
 - Email: dwarkeshrathore123@gmail.com
+- LinkedIn: [Dwarkesh Rathore](https://www.linkedin.com/in/dwarkesh-rathore-50a844297/)
 
 ---
 
