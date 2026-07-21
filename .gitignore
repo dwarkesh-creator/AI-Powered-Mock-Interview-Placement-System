@@ -21,12 +21,15 @@ htmlcov/
 *.db
 *.db-journal
 
-# IDE
+# IDE & Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.cursor/
+.kiro/
+.agents/
 
 # OS
 .DS_Store
