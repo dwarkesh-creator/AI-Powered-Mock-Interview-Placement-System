@@ -202,7 +202,16 @@ app: Any = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500", "http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=[
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://nilgen.app",
+        "https://www.nilgen.app",
+        "https://nilgen-frontend.vercel.app",
+        "https://*.vercel.app",  # All Vercel preview deploys
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -561,6 +570,7 @@ def _generate_questions_heuristic(role: str, resume_text: str, num: int) -> List
 
 def _generate_questions_llm(role: str, resume_text: str, num: int) -> List[str]:
     """Call an LLM to generate bespoke questions. Falls back to heuristic on any error."""
+    gemini_key = os.environ.get("GEMINI_API_KEY")
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
     openai_key = os.environ.get("OPENAI_API_KEY")
 
@@ -574,6 +584,40 @@ def _generate_questions_llm(role: str, resume_text: str, num: int) -> List[str]:
         "Return ONLY a JSON array of strings, no extra text. "
         'Example: ["Q1?", "Q2?"]'
     )
+
+    # Try Gemini first
+    if gemini_key:
+        try:
+            import importlib
+            import json
+            import re
+
+            genai = importlib.import_module("google.genai")
+            types = importlib.import_module("google.genai.types")
+            client = genai.Client(api_key=gemini_key)
+            
+            config_args = {
+                "response_mime_type": "application/json",
+                "temperature": 0.7,
+                "max_output_tokens": 800,
+            }
+            if hasattr(types, "ThinkingConfig"):
+                config_args["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
+            
+            response = client.models.generate_content(
+                model=(os.environ.get("GEMINI_MODEL") or "gemini-3.5-flash").strip(),
+                contents=prompt,
+                config=types.GenerateContentConfig(**config_args),
+            )
+            text = str(getattr(response, "text", "") or "").strip()
+            if text.startswith("```"):
+                text = text.strip("`").removeprefix("json").strip()
+            if text:
+                arr = json.loads(text)
+                if isinstance(arr, list):
+                    return [str(q) for q in arr[:num]]
+        except Exception:
+            pass
 
     if anthropic_key:
         try:
