@@ -1,6 +1,6 @@
 # 🎯 NilGen - AI-Powered Mock Interview, Career Chatbot & Placement System
 
-> **BTech 3rd Year Project** | Complete interview preparation platform with AI mock interviews, real-time feedback, performance analytics, and 24/7 career guidance chatbot
+> **Personal Project by BTech 3rd Year Student** | Complete interview preparation platform with AI mock interviews, real-time feedback, performance analytics, and 24/7 career guidance chatbot
 
 [![Made with React](https://img.shields.io/badge/React-18.0-blue.svg)](https://reactjs.org/)
 [![Python](https://img.shields.io/badge/Python-3.11-green.svg)](https://www.python.org/)
@@ -26,7 +26,7 @@
 
 ## 🎓 About
 
-**NilGen** is a comprehensive AI-powered mock interview and career preparation system designed to help students and job seekers excel in technical interviews. The platform combines realistic interview simulations, intelligent feedback analysis, and an AI career chatbot to provide end-to-end placement preparation support.
+**NilGen** is a comprehensive AI-powered mock interview and career preparation system that I built as a BTech student to help fellow students and job seekers excel in technical interviews. The platform combines realistic interview simulations, intelligent feedback analysis, and an AI career chatbot to provide end-to-end placement preparation support.
 
 ### Problem Statement
 Students often struggle with interview preparation due to:
@@ -438,7 +438,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Rhubarb Lip Sync** - For phoneme extraction technology
 - **React Community** - For exceptional UI libraries and tools
 - **FastAPI** - For comprehensive documentation and fast web framework
-- **My College** - For project guidance and support
+- **My Peers** - For feedback and testing support during development
 
 ---
 
