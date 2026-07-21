@@ -17,7 +17,7 @@
 - [Screenshots](#screenshots)
 - [Project Structure](#project-structure)
 - [Key Features Implementation](#key-features-implementation)
-- [Configuration](#configuration)
+- [Testing](#testing)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -367,29 +367,7 @@ AI-Powered-Mock-Interview-Placement-System/
 - Role-specific recommendations
 - CGPA and skills-based advice
 
----
-
-## 🔧 Configuration
-
-### Backend Environment Variables
-```env
-# Required - Your LLM API credentials
-API_KEY=your_api_key_here
-
-# Optional (defaults shown)
-MODEL=your_preferred_model
-TTS_MODEL=your_tts_model
-TTS_VOICE=preferred_voice
-```
-
-### Voice Configuration Options
-The system supports multiple AI voice profiles for the interviewer:
-- **Orbit** (default) - Neutral professional male voice, optimized for Indian-English accent
-- **Charon** - Mature, authoritative male voice
-- **Fenrir** - Deep, commanding male voice
-- **Sadaltager** - Professional female voice
-
----
+------
 
 ## 🧪 Testing
 
@@ -428,7 +406,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Dwarkesh Rathore**
 
 - GitHub: [@dwarkesh-creator](https://github.com/dwarkesh-creator)
-- Email: dwarkesh.rathore@example.com
+- Email: dwarkeshrathore123@gmail.com
 - LinkedIn: [Dwarkesh Rathore](https://linkedin.com/in/dwarkesh-rathore)
 
 ---
@@ -479,7 +457,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For issues and questions:
 - Open an [Issue](https://github.com/dwarkesh-creator/AI-Powered-Mock-Interview-Placement-System/issues)
-- Email: dwarkesh.rathore@example.com
+- Email: dwarkeshrathore123@gmail.com
 
 ---
 
