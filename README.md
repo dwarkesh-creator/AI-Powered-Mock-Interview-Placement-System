@@ -49,8 +49,8 @@ NilGen provides:
 ## ✨ Features
 
 ### 🎤 Realistic Mock Interviews
-- **AI Voice Interviewer** - Gemini TTS with natural Indian-English accent
-- **2D Animated Avatar** - Lip-synced responses with Rhubarb Lip Sync
+- **AI Voice Interviewer** - Natural text-to-speech with Indian-English accent
+- **2D Animated Avatar** - Lip-synced responses with phoneme-accurate animation
 - **Speech Recognition** - Real-time transcription of candidate answers
 - **Video Analysis** - Computer vision-based confidence assessment
 
@@ -105,11 +105,11 @@ NilGen provides:
 - **Uvicorn** - ASGI server
 
 ### AI/ML Components
-- **Google Gemini** - LLM for chat and TTS
+- **Google Gemini** - Advanced LLM for chat, question generation, and natural TTS
 - **OpenCV** - Computer vision for confidence analysis
 - **TensorFlow** - Emotion detection model
 - **Scikit-learn** - NLP for answer grading
-- **Rhubarb Lip Sync** - Phoneme extraction for avatar
+- **Rhubarb Lip Sync** - Phoneme extraction for realistic avatar animation
 
 ### DevOps
 - **Git** - Version control
