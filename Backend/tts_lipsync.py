@@ -1,8 +1,7 @@
-"""Gemini TTS file generation plus optional Rhubarb mouth-cue extraction."""
+"""Azure Speech Services TTS file generation plus optional Rhubarb mouth-cue extraction."""
 from __future__ import annotations
-import base64
-import importlib
 import json
+import os
 import subprocess
 import tempfile
 import uuid
@@ -15,8 +14,8 @@ BACKEND_DIR = Path(__file__).resolve().parent
 GENERATED_AUDIO_DIR = BACKEND_DIR / "generated_audio"
 RHUBARB_DIR = BACKEND_DIR / "bin" / "rhubarb"
 
-DEFAULT_TTS_MODEL = "gemini-3.1-flash-tts-preview"
-DEFAULT_TTS_VOICE = "Orbit"  # Neutral male voice (best for Indian accent)
+# Azure TTS defaults
+DEFAULT_TTS_VOICE = "en-IN-RehaanNeural"  # Indian English male voice
 
 PCM_SAMPLE_RATE = 24_000
 PCM_CHANNELS = 1
@@ -26,7 +25,7 @@ VALID_VISEMES = frozenset({"A", "B", "C", "D", "E", "F", "G", "H", "X"})
 
 
 class AudioSynthesisError(RuntimeError):
-    """Raised when Gemini cannot produce a usable WAV file."""
+    """Raised when Azure Speech cannot produce a usable WAV file."""
 
 
 class LipSyncError(RuntimeError):
@@ -54,52 +53,46 @@ def _find_rhubarb_binary() -> Optional[Path]:
     return matches[0] if matches else None
 
 
-def _pcm_from_response(response: Any) -> bytes:
+def _generate_audio_azure(question: str, speech_key: str, endpoint: str, voice: str) -> bytes:
+    """Generate audio using Azure Speech Services."""
     try:
-        data = response.candidates[0].content.parts[0].inline_data.data
-    except (AttributeError, IndexError, TypeError) as exc:
-        raise AudioSynthesisError("Gemini TTS returned no audio data.") from exc
+        import azure.cognitiveservices.speech as speechsdk
+        from urllib.parse import urlparse
+    except ImportError as exc:
+        raise AudioSynthesisError(
+            "Azure Speech SDK not installed. Run: pip install azure-cognitiveservices-speech"
+        ) from exc
     
-    if isinstance(data, bytes):
-        return data
-    if isinstance(data, str):
-        try:
-            return base64.b64decode(data)
-        except ValueError as exc:
-            raise AudioSynthesisError("Gemini TTS returned invalid encoded audio.") from exc
+    # Parse endpoint URL to get base URL
+    parsed = urlparse(endpoint)
+    base_endpoint = f"{parsed.scheme}://{parsed.netloc}"
     
-    raise AudioSynthesisError("Gemini TTS returned audio in an unsupported format.")
-
-
-def _generate_pcm(question: str, api_key: str, model: str, voice: str) -> bytes:
-    genai = importlib.import_module("google.genai")
-    types = importlib.import_module("google.genai.types")
+    # Configure Azure Speech with endpoint (not region!)
+    speech_config = speechsdk.SpeechConfig(subscription=speech_key, endpoint=base_endpoint)
+    speech_config.speech_synthesis_voice_name = voice
     
-    client = genai.Client(api_key=api_key)
-    
-    prompt = (
-        "You are a professional Indian interviewer conducting a job interview. "
-        "Speak in a clear, confident male voice with a natural Indian English accent. "
-        "Use a calm, measured pace with professional interview tone - authoritative yet friendly. "
-        "Pronounce each word clearly as an experienced Indian HR interviewer would. "
-        "Do not add any introduction, commentary, or answer - only read the question below.\n\n"
-        f"QUESTION:\n{question}"
+    # Set output format to WAV (Riff24Khz16BitMonoPcm includes WAV header)
+    speech_config.set_speech_synthesis_output_format(
+        speechsdk.SpeechSynthesisOutputFormat.Riff24Khz16BitMonoPcm
     )
     
-    response = client.models.generate_content(
-        model=model,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_modalities=["AUDIO"],
-            speech_config=types.SpeechConfig(
-                voice_config=types.VoiceConfig(
-                    prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=voice),
-                ),
-            ),
-        ),
-    )
+    # Synthesize to in-memory stream (audio_config=None means in-memory)
+    synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
     
-    return _pcm_from_response(response)
+    # Synthesize text
+    result = synthesizer.speak_text_async(question).get()
+    
+    if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+        # audio_data already contains complete WAV file with header
+        return result.audio_data
+    elif result.reason == speechsdk.ResultReason.Canceled:
+        cancellation_details = result.cancellation_details
+        error_msg = f"Azure TTS failed: {cancellation_details.reason}"
+        if cancellation_details.error_details:
+            error_msg += f" - {cancellation_details.error_details}"
+        raise AudioSynthesisError(error_msg)
+    else:
+        raise AudioSynthesisError(f"Azure TTS returned unexpected result: {result.reason}")
 
 
 def _write_wav(path: Path, pcm: bytes) -> None:
@@ -176,12 +169,27 @@ def generate_mouth_cues(audio_path: Path, dialog: str) -> List[Dict[str, Any]]:
 
 def synthesize_interview_question(
     question: str,
-    api_key: str,
-    model: str = DEFAULT_TTS_MODEL,
-    voice: str = DEFAULT_TTS_VOICE,
+    speech_key: Optional[str] = None,
+    endpoint: Optional[str] = None,
+    voice: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Create a saved Gemini TTS WAV and attach Rhubarb cues when available."""
+    """Create a saved Azure TTS WAV and attach Rhubarb cues when available."""
     import time
+    
+    # Get Azure credentials from environment if not provided
+    speech_key = speech_key or os.environ.get("AZURE_SPEECH_KEY")
+    endpoint = endpoint or os.environ.get("AZURE_SPEECH_ENDPOINT")
+    voice = voice or os.environ.get("AZURE_TTS_VOICE", DEFAULT_TTS_VOICE)
+    
+    if not speech_key:
+        raise AudioSynthesisError(
+            "Azure Speech key is required. Set AZURE_SPEECH_KEY environment variable."
+        )
+    
+    if not endpoint:
+        raise AudioSynthesisError(
+            "Azure Speech endpoint is required. Set AZURE_SPEECH_ENDPOINT environment variable."
+        )
     
     clean_question = " ".join(str(question or "").split())
     if not clean_question:
@@ -195,19 +203,21 @@ def synthesize_interview_question(
                 # Backoff: wait 2s, then 4s
                 time.sleep(2 ** attempt)
             
-            pcm = _generate_pcm(clean_question, api_key, model, voice)
-            if not pcm:
-                raise AudioSynthesisError("Gemini TTS returned an empty audio response.")
+            audio_data = _generate_audio_azure(clean_question, speech_key, endpoint, voice)
+            if not audio_data:
+                raise AudioSynthesisError("Azure TTS returned an empty audio response.")
             break
         except Exception as exc:
             last_error = exc
             warnings.warn(f"TTS attempt {attempt + 1}/3 failed: {exc}", RuntimeWarning)
     else:
-        raise AudioSynthesisError(f"Gemini TTS failed after 3 attempts. Last error: {last_error}") from last_error
+        raise AudioSynthesisError(f"Azure TTS failed after 3 attempts. Last error: {last_error}") from last_error
     
     filename = f"interview-question-{uuid.uuid4().hex}.wav"
     audio_path = ensure_generated_audio_directory() / filename
-    _write_wav(audio_path, pcm)
+    
+    # Azure returns complete WAV file, just write it directly
+    audio_path.write_bytes(audio_data)
     
     try:
         mouth_cues = generate_mouth_cues(audio_path, clean_question)

@@ -323,6 +323,18 @@ def health_check():
     return {"status": "ok", "service": "NilGen Backend"}
 
 
+@app.get("/api/debug/env", tags=["health"])
+def debug_env():
+    """Debug endpoint to check environment variables (remove in production)"""
+    import os
+    return {
+        "gemini_api_key_set": bool(os.getenv("GEMINI_API_KEY")),
+        "gemini_model": os.getenv("GEMINI_MODEL", "not set"),
+        "gemini_tts_model": os.getenv("GEMINI_TTS_MODEL", "not set"),
+        "gemini_tts_voice": os.getenv("GEMINI_TTS_VOICE", "not set"),
+    }
+
+
 # ── Auth ───────────────────────────────────────────────────────────────────────
 
 @app.post("/api/auth/signup", status_code=status.HTTP_201_CREATED, response_model=AuthResponse, tags=["auth"])
@@ -909,16 +921,14 @@ def _attach_interview_audio(
     turn: InterviewTurnResponse,
     api_key: str,
 ) -> InterviewTurnResponse:
-    """Attach saved Gemini TTS audio and Rhubarb cues without breaking a turn."""
+    """Attach saved Azure TTS audio and Rhubarb cues without breaking a turn."""
     if turn.is_last_question or not turn.next_question or synthesize_interview_question is None:
         return turn
 
     try:
         audio = synthesize_interview_question(
             turn.next_question,
-            api_key,
-            model=(os.environ.get("GEMINI_TTS_MODEL") or "gemini-3.1-flash-tts-preview").strip(),
-            voice=(os.environ.get("GEMINI_TTS_VOICE") or "Sadaltager").strip(),
+            # Azure credentials from environment - no need to pass api_key
         )
         filename = str(audio.get("filename") or "")
         if filename:
