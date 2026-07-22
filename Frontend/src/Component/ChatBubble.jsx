@@ -6,6 +6,17 @@
  */
 export default function ChatBubble({ role, content }) {
   const isUser = role === 'user';
+  
+  // Format content to preserve line breaks and add spacing
+  const formatContent = (text) => {
+    return text.split('\n').map((line, index, array) => (
+      <span key={index}>
+        {line}
+        {index < array.length - 1 && <><br /><br /></>}
+      </span>
+    ));
+  };
+
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -13,7 +24,7 @@ export default function ChatBubble({ role, content }) {
           isUser ? 'bg-white text-black' : 'border border-white/10 bg-white/[0.03] text-zinc-200'
         }`}
       >
-        {content}
+        {formatContent(content)}
       </div>
     </div>
   );
