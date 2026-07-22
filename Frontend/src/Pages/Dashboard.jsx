@@ -51,14 +51,13 @@ export default function Dashboard() {
 
     fetchSessions(auth.userId)
       .then((data) => {
-        if (data.length === 0) {
-          // If no real data, show demo data
-          setSessions(DEMO_SESSIONS);
-        } else {
-          setSessions(data);
-        }
+        // Always show real data for logged-in users, even if empty
+        setSessions(data);
       })
-      .catch(() => setSessions(DEMO_SESSIONS))
+      .catch(() => {
+        // On error, show empty array instead of demo data
+        setSessions([]);
+      })
       .finally(() => setLoading(false));
   }, [auth?.userId, isGuest]);
 
