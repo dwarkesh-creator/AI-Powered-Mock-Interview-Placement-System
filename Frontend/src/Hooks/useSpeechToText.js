@@ -37,7 +37,13 @@ function useSpeechToText() {
 
       recognition.onerror = (event) => {
         if (RECOVERABLE_ERRORS.has(event.error)) return;
-        setError(`Error: ${event.error}`);
+        
+        // Handle permission denied error specifically
+        if (event.error === 'network' || event.error === 'not-allowed' || event.error === 'permission-denied') {
+          setError('Microphone permission denied. Please check your browser settings and allow microphone access.');
+        } else {
+          setError(`Error: ${event.error}`);
+        }
         shouldListenRef.current = false;
         setIsListening(false);
       };
@@ -63,8 +69,12 @@ function useSpeechToText() {
     try {
       recognition.start();
       setIsListening(true);
-    } catch {
-      setError('Could not start speech recognition. Please reload and try again.');
+    } catch (err) {
+      if (err.name === 'NotAllowedError') {
+        setError('Microphone permission denied. Please allow microphone access in your browser settings.');
+      } else {
+        setError('Could not start speech recognition. Please reload and try again.');
+      }
       shouldListenRef.current = false;
       setIsListening(false);
     }
