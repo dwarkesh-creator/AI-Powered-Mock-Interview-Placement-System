@@ -28,6 +28,7 @@ function AnswerRecorder({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isInputReady, setIsInputReady] = useState(false);
   const [submissionError, setSubmissionError] = useState(null);
+  const [manualAnswer, setManualAnswer] = useState('');
   const silenceTimerRef = useRef(null);
   const submittedRef = useRef(false);
 
@@ -64,7 +65,7 @@ function AnswerRecorder({
   }, [isListening, onListeningChange]);
 
   async function submitAnswer(finalText) {
-    const text = finalText?.trim();
+    const text = (finalText || manualAnswer)?.trim();
     if (
       !text
       || submittedRef.current
@@ -86,6 +87,7 @@ function AnswerRecorder({
       if (!turn) throw new Error('The interview service returned no next step.');
 
       latest.current.resetTranscript();
+      setManualAnswer('');
     } catch (err) {
       console.error('Interview turn failed:', err);
       setSubmissionError(err.message || 'Could not evaluate your answer.');
@@ -196,15 +198,28 @@ function AnswerRecorder({
 
           <div className="rounded-xl border border-white/10 bg-black/20 p-3">
             <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Your answer</p>
-            <p className="mt-2 text-sm text-zinc-200">
-              {transcript || (isListening ? 'Listening... speak your answer.' : 'Waiting for your voice...')}
-            </p>
+            {isListening && !transcript ? (
+              <div className="mt-2 space-y-2">
+                <p className="text-sm text-zinc-200">Listening... speak your answer.</p>
+                <textarea
+                  value={manualAnswer}
+                  onChange={(e) => setManualAnswer(e.target.value)}
+                  placeholder="Or type your answer here if voice isn't working..."
+                  className="w-full rounded-lg border border-white/10 bg-zinc-900 p-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-white/20 focus:outline-none"
+                  rows={3}
+                />
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-zinc-200">
+                {transcript || manualAnswer || (isListening ? 'Listening...' : 'Waiting for your voice...')}
+              </p>
+            )}
           </div>
 
-          {transcript?.trim() && (
+          {(transcript?.trim() || manualAnswer?.trim()) && (
             <button
               type="button"
-              onClick={() => submitAnswer(transcript)}
+              onClick={() => submitAnswer(transcript || manualAnswer)}
               disabled={submitDisabled}
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-white/20 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
             >
