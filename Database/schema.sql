@@ -1,4 +1,4 @@
--- NilGen SQLite Schema
+-- PrepBuddy SQLite Schema
 -- Run this manually if you need to (re)create the DB from scratch.
 -- The FastAPI app (Backend/main.py) auto-runs this on startup via _init_db().
 

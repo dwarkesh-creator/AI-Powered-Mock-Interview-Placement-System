@@ -8,6 +8,6 @@ export default defineConfig({
     host: true,
   },
   define: {
-    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://nilgen-backend.onrender.com'),
+    'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://nilgen-backend.onrender.com'), // TODO: Update after rebranding Render service
   },
 })
