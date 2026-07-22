@@ -200,7 +200,7 @@ export default function InterviewRoom() {
 
       <div className="flex flex-1 flex-col lg:flex-row">
         {/* Interview Content Section - Full width on mobile, left side on desktop */}
-        <section className="flex flex-1 flex-col justify-center px-4 py-6 sm:px-8 sm:py-12 lg:w-[48%] lg:flex-none lg:border-r lg:border-white/10 lg:px-10 xl:px-12">
+        <section className={`flex flex-1 flex-col justify-center px-4 py-6 sm:px-8 sm:py-12 lg:px-10 xl:px-12 ${summary ? 'lg:w-full lg:border-r-0' : 'lg:w-[48%] lg:flex-none lg:border-r lg:border-white/10'}`}>
           {summary ? (
             <InterviewSummary summary={summary} onDone={() => navigate('/dashboard')} />
           ) : isStarting ? (
@@ -250,6 +250,15 @@ export default function InterviewRoom() {
                 Speak naturally, as you would in a real interview. Aim for under two minutes.
               </p>
 
+              {/* NilGen Interviewer Avatar */}
+              <div className="mt-4 sm:mt-5">
+                <Avatar2D
+                  analyserNode={interviewerAudioAnalyser}
+                  isSpeaking={isInterviewerSpeaking}
+                  isListening={isInterviewerListening}
+                />
+              </div>
+
               <div className="mt-4 sm:mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4">
                 <AnswerRecorder
                   question={question}
@@ -277,38 +286,35 @@ export default function InterviewRoom() {
           )}
         </section>
 
-        {/* Video Section - Better proportions on desktop */}
-        <section className="relative flex flex-1 items-center justify-center bg-zinc-950 p-4 sm:p-6 lg:p-8 xl:p-10">
-          <div className="relative w-full max-w-lg lg:max-w-3xl xl:max-w-4xl">
-            {isRecording && <div className="absolute -inset-2 sm:-inset-3 lg:-inset-4 rounded-[20px] sm:rounded-[28px] bg-white/[0.06] blur-xl motion-safe:animate-breathe" />}
-            <div className="relative aspect-video w-full overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 bg-zinc-900">
-              <video ref={videoRef} autoPlay muted playsInline className="h-full w-full scale-x-[-1] object-cover" />
-              {permissionState === 'pending' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900">
-                  <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
-                  <span className="text-xs text-zinc-500">Requesting camera access...</span>
-                </div>
-              )}
-              {permissionState === 'denied' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900 px-6 text-center">
-                  <AlertTriangle className="h-5 w-5 text-zinc-600" strokeWidth={1.5} />
-                  <span className="text-xs text-zinc-500">Camera unavailable</span>
-                </div>
-              )}
-              {permissionState === 'granted' && (
-                <span className="absolute left-2 top-2 sm:left-3 sm:top-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium text-zinc-200 backdrop-blur">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                  LIVE
-                </span>
-              )}
-              <Avatar2D
-                analyserNode={interviewerAudioAnalyser}
-                isSpeaking={isInterviewerSpeaking}
-                isListening={isInterviewerListening}
-              />
+        {/* Video Section - Hidden when showing summary */}
+        {!summary && (
+          <section className="relative flex flex-1 items-center justify-center bg-zinc-950 p-4 sm:p-6 lg:p-8 xl:p-10">
+            <div className="relative w-full max-w-lg lg:max-w-3xl xl:max-w-4xl">
+              {isRecording && <div className="absolute -inset-2 sm:-inset-3 lg:-inset-4 rounded-[20px] sm:rounded-[28px] bg-white/[0.06] blur-xl motion-safe:animate-breathe" />}
+              <div className="relative aspect-video w-full overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 bg-zinc-900">
+                <video ref={videoRef} autoPlay muted playsInline className="h-full w-full scale-x-[-1] object-cover" />
+                {permissionState === 'pending' && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900">
+                    <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+                    <span className="text-xs text-zinc-500">Requesting camera access...</span>
+                  </div>
+                )}
+                {permissionState === 'denied' && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900 px-6 text-center">
+                    <AlertTriangle className="h-5 w-5 text-zinc-600" strokeWidth={1.5} />
+                    <span className="text-xs text-zinc-500">Camera unavailable</span>
+                  </div>
+                )}
+                {permissionState === 'granted' && (
+                  <span className="absolute left-2 top-2 sm:left-3 sm:top-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium text-zinc-200 backdrop-blur">
+                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                    LIVE
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
       </div>
 
       {/* Footer - Fixed at bottom on mobile, hidden when keyboard is open */}
