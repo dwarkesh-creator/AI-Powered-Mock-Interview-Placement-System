@@ -302,32 +302,29 @@ python main.py
 
 ## 📸 Screenshots
 
-> **Note:** Take screenshots of your deployed application and add them here to showcase your project to potential employers and collaborators.
+### Login Page
+![Login Page](docs/screenshots/Login.png)
+*Clean authentication interface with guest mode option for instant access*
 
-**Recommended screenshots:**
-- Dashboard with recent interviews and analytics
-- Mock interview in progress with AI avatar
-- Performance analytics charts
-- Career guidance chatbot conversation
-
-**To add screenshots:**
-1. Take screenshots of your live site: https://nilgen-ai.vercel.app
-2. Save them in a `docs/screenshots/` folder
-3. Update the image links below
-
-<!-- Uncomment and update paths when you have screenshots
 ### Dashboard
-![Dashboard](docs/screenshots/dashboard.png)
+![Dashboard](docs/screenshots/Dashboard.png)
+*Track your interview performance, placement probability, and recent sessions at a glance*
 
 ### Mock Interview
-![Interview](docs/screenshots/interview.png)
+![Interview Room](docs/screenshots/Interview%20Room.png)
+*Real-time AI-powered interview with video recording, speech recognition, and animated interviewer*
 
-### Analytics
-![Analytics](docs/screenshots/analytics.png)
+### Interview Feedback
+![Feedback](docs/screenshots/Feedback.png)
+*Comprehensive performance analysis with scores, confidence metrics, and actionable improvement suggestions*
 
-### Career Bot
-![Career Bot](docs/screenshots/career-bot.png)
--->
+### Performance Analytics
+![Analytics](docs/screenshots/Analytics.png)
+*Detailed insights with score trends, distribution charts, and role-based breakdowns*
+
+### Career Guidance Bot
+![Career Bot](docs/screenshots/Career%20bot.png)
+*24/7 AI career coach providing personalized placement advice and interview preparation tips*
 
 ---
 
