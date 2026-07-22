@@ -960,7 +960,17 @@ def get_interview_audio(filename: str):
     audio_path = get_generated_audio_path(filename)
     if audio_path is None or not audio_path.is_file():
         raise HTTPException(status_code=404, detail="Interview audio was not found.")
-    return FileResponse(audio_path, media_type="audio/wav")
+    
+    # Return FileResponse with CORS headers
+    return FileResponse(
+        audio_path, 
+        media_type="audio/wav",
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 
 @app.post("/api/generate-questions", response_model=QuestionResponse, tags=["ai"])
