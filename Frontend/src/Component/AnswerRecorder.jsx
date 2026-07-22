@@ -28,6 +28,7 @@ function AnswerRecorder({
   const [isProcessing, setIsProcessing] = useState(false);
   const [isInputReady, setIsInputReady] = useState(false);
   const [submissionError, setSubmissionError] = useState(null);
+  const [manualTranscript, setManualTranscript] = useState('');
   const silenceTimerRef = useRef(null);
   const submittedRef = useRef(false);
 
@@ -64,7 +65,7 @@ function AnswerRecorder({
   }, [isListening, onListeningChange]);
 
   async function submitAnswer(finalText) {
-    const text = finalText?.trim();
+    const text = (finalText || manualTranscript)?.trim();
     if (
       !text
       || submittedRef.current
@@ -86,6 +87,7 @@ function AnswerRecorder({
       if (!turn) throw new Error('The interview service returned no next step.');
 
       latest.current.resetTranscript();
+      setManualTranscript('');
     } catch (err) {
       console.error('Interview turn failed:', err);
       setSubmissionError(err.message || 'Could not evaluate your answer.');
@@ -196,15 +198,30 @@ function AnswerRecorder({
 
           <div className="rounded-xl border border-white/10 bg-black/20 p-3">
             <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Your answer</p>
-            <p className="mt-2 text-sm text-zinc-200">
-              {transcript || (isListening ? 'Listening... speak your answer.' : 'Waiting for your voice...')}
-            </p>
+            {isListening ? (
+              <p className="mt-2 text-sm text-zinc-200">
+                {transcript || 'Listening... speak your answer.'}
+              </p>
+            ) : (
+              <textarea
+                value={transcript}
+                onChange={(e) => {
+                  // This allows manual text input as fallback on mobile
+                  if (!isListening) {
+                    setTranscript(e.target.value);
+                  }
+                }}
+                placeholder="If voice isn't working, type your answer here..."
+                className="mt-2 w-full rounded-lg border border-white/10 bg-zinc-900 p-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-white/20 focus:outline-none"
+                rows={4}
+              />
+            )}
           </div>
 
-          {transcript?.trim() && (
+          {(transcript?.trim() || manualTranscript?.trim()) && (
             <button
               type="button"
-              onClick={() => submitAnswer(transcript)}
+              onClick={() => submitAnswer(transcript || manualTranscript)}
               disabled={submitDisabled}
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-white/20 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
             >
