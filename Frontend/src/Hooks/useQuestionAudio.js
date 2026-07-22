@@ -108,7 +108,7 @@ export default function useQuestionAudio() {
       const result = {
         success: false,
         reason: 'missing_url',
-        message: 'The backend did not return interviewer audio (Gemini TTS likely failed during question generation).',
+        message: 'The backend did not return interviewer audio (TTS service temporarily unavailable).',
       };
       console.error('[useQuestionAudio] Missing audio URL from interview turn.', result);
       return result;

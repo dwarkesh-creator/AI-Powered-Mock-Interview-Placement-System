@@ -123,7 +123,7 @@ function AnswerRecorder({
           questionAudio,
         });
 
-        setSubmissionError(`${detail}${backendReason} - Please ensure Gemini TTS is configured.`);
+        setSubmissionError(`${detail}${backendReason} - Please ensure speech service is configured.`);
         setStatus('Interviewer voice unavailable. Contact support.');
         return;
       }
