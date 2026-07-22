@@ -963,6 +963,7 @@ def interview_next_turn(body: InterviewTurnRequest):
 
 @app.get("/api/interview/audio/{filename}", tags=["ai"])
 @app.head("/api/interview/audio/{filename}", tags=["ai"])
+@app.options("/api/interview/audio/{filename}", tags=["ai"])
 def get_interview_audio(filename: str):
     if get_generated_audio_path is None:
         raise HTTPException(status_code=503, detail="Interview audio service unavailable.")
@@ -979,6 +980,7 @@ def get_interview_audio(filename: str):
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
             "Access-Control-Allow-Headers": "*",
+            "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length",
         }
     )
 
