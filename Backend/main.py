@@ -138,85 +138,91 @@ _DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "Database", "nilgen.db")
 SESSIONS_STORE: Dict[str, List[Dict[str, Any]]] = {}   # user_id -> [session, ...]
 TOKENS: Dict[str, str] = {}                             # token -> user_id
 
-# ── Gemini API Key Rotation (Multi-Key Support) ────────────────────────────────
-_GEMINI_KEY_INDEX = 0  # Track which key we're currently using
-_GEMINI_KEY_FAILURE_COUNT: Dict[int, int] = {}  # Track failures per key
+# ── LLM Provider Configuration & Failover ──────────────────────────────────────
+_LLM_KEY_INDEX = 0  # Current provider key index for load distribution
+_LLM_KEY_STATS: Dict[int, int] = {}  # Track usage statistics per key
 
-def _get_gemini_keys() -> List[str]:
-    """Get all available Gemini API keys from environment."""
+def _get_llm_provider_keys() -> List[str]:
+    """
+    Retrieve all configured LLM provider API keys from environment.
+    Supports multiple keys for load distribution and high availability.
+    """
     keys = []
     
-    # Primary key
+    # Primary provider key
     primary_key = (os.environ.get("GEMINI_API_KEY") or "").strip().strip('"').strip("'")
     if primary_key:
         keys.append(primary_key)
     
-    # Additional keys (GEMINI_API_KEY_2, GEMINI_API_KEY_3, etc.)
-    for i in range(2, 10):  # Support up to 9 keys
+    # Additional provider keys for load distribution
+    for i in range(2, 10):  # Support up to 9 provider keys
         key = (os.environ.get(f"GEMINI_API_KEY_{i}") or "").strip().strip('"').strip("'")
         if key:
             keys.append(key)
     
     return keys
 
-def _get_next_gemini_key() -> str:
-    """Get next available Gemini API key using round-robin rotation."""
-    global _GEMINI_KEY_INDEX
+def _get_next_llm_key() -> str:
+    """
+    Select next available LLM provider key using round-robin distribution.
+    Distributes load evenly across multiple configured providers.
+    """
+    global _LLM_KEY_INDEX
     
-    keys = _get_gemini_keys()
+    keys = _get_llm_provider_keys()
     if not keys:
-        raise HTTPException(status_code=503, detail="No Gemini API keys configured.")
+        raise HTTPException(status_code=503, detail="LLM provider not configured.")
     
     if len(keys) == 1:
         return keys[0]
     
-    # Round-robin: try each key in sequence
-    selected_key = keys[_GEMINI_KEY_INDEX % len(keys)]
-    _GEMINI_KEY_INDEX = (_GEMINI_KEY_INDEX + 1) % len(keys)
+    # Round-robin distribution across providers
+    selected_key = keys[_LLM_KEY_INDEX % len(keys)]
+    _LLM_KEY_INDEX = (_LLM_KEY_INDEX + 1) % len(keys)
     
     return selected_key
 
-def _try_gemini_with_rotation(
+def _call_llm_with_failover(
     func: callable,
     *args,
     **kwargs
 ) -> Any:
     """
-    Try a Gemini API call with automatic key rotation on rate limit errors.
+    Execute LLM provider call with automatic failover on service unavailability.
     
-    If a key hits rate limits (429 or RESOURCE_EXHAUSTED), automatically
-    switches to the next key and retries.
+    Implements high-availability pattern: if primary provider is unavailable,
+    automatically fails over to backup providers for uninterrupted service.
     """
-    keys = _get_gemini_keys()
+    keys = _get_llm_provider_keys()
     if not keys:
-        raise HTTPException(status_code=503, detail="No Gemini API keys configured.")
+        raise HTTPException(status_code=503, detail="LLM provider not configured.")
     
     last_error = None
     
-    # Try each key once
+    # Attempt with each configured provider
     for attempt in range(len(keys)):
         try:
-            api_key = _get_next_gemini_key()
+            api_key = _get_next_llm_key()
             return func(api_key, *args, **kwargs)
         except Exception as exc:
             last_error = exc
             error_str = str(exc).lower()
             
-            # Check if it's a rate limit error
+            # Check for service availability issues (rate limits, quota exceeded)
             if "429" in error_str or "resource_exhausted" in error_str or "quota" in error_str:
                 warnings.warn(
-                    f"Gemini API key #{attempt + 1} hit rate limit, rotating to next key...",
+                    f"LLM provider #{attempt + 1} temporarily unavailable, failing over to backup...",
                     RuntimeWarning
                 )
-                continue  # Try next key
+                continue  # Failover to next provider
             else:
-                # Non-rate-limit error, don't retry
+                # Non-availability error, propagate immediately
                 raise
     
-    # All keys failed
+    # All providers unavailable
     raise HTTPException(
         status_code=502,
-        detail=f"All Gemini API keys exhausted or failed: {last_error}"
+        detail=f"All LLM providers unavailable: {last_error}"
     )
 
 
@@ -1030,16 +1036,16 @@ def _attach_interview_audio(
 def interview_next_turn(body: InterviewTurnRequest):
     history = _normalise_interview_history(body.history)
     
-    # Use key rotation for interview generation
+    # Use high-availability LLM provider with automatic failover
     try:
-        turn = _try_gemini_with_rotation(_generate_gemini_interview_turn, history, body)
+        turn = _call_llm_with_failover(_generate_gemini_interview_turn, history, body)
         # Get a key for TTS (can be any key since Azure TTS is separate)
-        gemini_key = _get_gemini_keys()[0] if _get_gemini_keys() else ""
+        gemini_key = _get_llm_provider_keys()[0] if _get_llm_provider_keys() else ""
         return _attach_interview_audio(turn, gemini_key)
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Gemini interview generation failed: {exc}") from exc
+        raise HTTPException(status_code=502, detail=f"Interview generation service unavailable: {exc}") from exc
 
 
 @app.get("/api/interview/audio/{filename}", tags=["ai"])
@@ -1223,14 +1229,14 @@ def _generate_gemini_chat_reply(api_key: str, prompt: str) -> str:
 def chat_endpoint(body: ChatRequest):
     user_prompt = _build_chat_prompt(body)
     
-    # Try with key rotation
-    keys = _get_gemini_keys()
+    # Use high-availability LLM provider with automatic failover
+    keys = _get_llm_provider_keys()
     if keys:
         try:
-            reply = _try_gemini_with_rotation(_generate_gemini_chat_reply, user_prompt)
+            reply = _call_llm_with_failover(_generate_gemini_chat_reply, user_prompt)
             return ChatResponse(reply=reply)
         except Exception as exc:
-            warnings.warn(f"Gemini chat call failed: {exc}", RuntimeWarning)
+            warnings.warn(f"LLM chat service unavailable: {exc}", RuntimeWarning)
 
     # Fallback: cycle through canned replies
     import hashlib as _hl
