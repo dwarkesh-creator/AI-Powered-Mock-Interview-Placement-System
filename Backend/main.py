@@ -1251,6 +1251,39 @@ def chat_endpoint(body: ChatRequest):
     return ChatResponse(reply=_CANNED_REPLIES[idx])
 
 
+# ── Speech Token Exchange (Secure Azure STT) ──────────────────────────────────
+
+@app.get("/api/speech/token", tags=["ai"])
+def get_speech_token():
+    """Generate a temporary Azure Speech token for client-side STT"""
+    import requests
+    
+    speech_key = os.environ.get("AZURE_SPEECH_KEY")
+    speech_region = os.environ.get("AZURE_SPEECH_REGION", "eastasia")
+    
+    if not speech_key:
+        raise HTTPException(status_code=503, detail="Azure Speech credentials not configured.")
+    
+    # Request token from Azure
+    token_url = f"https://{speech_region}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
+    headers = {
+        "Ocp-Apim-Subscription-Key": speech_key
+    }
+    
+    try:
+        response = requests.post(token_url, headers=headers, timeout=10)
+        if response.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"Azure token generation failed: {response.text}")
+        
+        token = response.text
+        return {
+            "token": token,
+            "region": speech_region
+        }
+    except requests.exceptions.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Could not get Azure token: {exc}")
+
+
 # ── Speech-to-Text (Azure) ─────────────────────────────────────────────────────
 
 @app.post("/api/transcribe", tags=["ai"])
