@@ -118,21 +118,14 @@ function AnswerRecorder({
           ? ` Backend TTS error: ${questionAudio.audioError}`
           : '';
         const detail = playback?.message || 'Interviewer audio could not be loaded.';
-        console.error('[AnswerRecorder] Saved interviewer audio unavailable.', {
+        console.error('[AnswerRecorder] Interviewer audio unavailable.', {
           playback,
           questionAudio,
         });
 
-        if (latest.current.question) {
-          console.warn('[AnswerRecorder] Falling back to browser text-to-speech.');
-          setStatus('Saved voice unavailable — using browser speech instead...');
-          await latest.current.speak(latest.current.question, { rate: 1.02 });
-          if (cancelled) return;
-        } else {
-          setSubmissionError(`${detail}${backendReason}`);
-          setStatus('Interviewer audio unavailable.');
-          return;
-        }
+        setSubmissionError(`${detail}${backendReason} - Please ensure Gemini TTS is configured.`);
+        setStatus('Interviewer voice unavailable. Contact support.');
+        return;
       }
 
       setStatus('Listening for your answer...');
