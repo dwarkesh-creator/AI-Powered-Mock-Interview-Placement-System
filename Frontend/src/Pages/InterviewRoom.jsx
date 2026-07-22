@@ -200,7 +200,7 @@ export default function InterviewRoom() {
 
       <div className="flex flex-1 flex-col lg:flex-row">
         {/* Interview Content Section - Full width on mobile, left side on desktop */}
-        <section className="flex flex-1 flex-col justify-center px-4 py-6 sm:px-8 sm:py-12 lg:w-[42%] lg:flex-none lg:border-r lg:border-white/10 lg:px-12">
+        <section className="flex flex-1 flex-col justify-center px-4 py-6 sm:px-8 sm:py-12 lg:w-[48%] lg:flex-none lg:border-r lg:border-white/10 lg:px-10 xl:px-12">
           {summary ? (
             <InterviewSummary summary={summary} onDone={() => navigate('/dashboard')} />
           ) : isStarting ? (
@@ -243,10 +243,10 @@ export default function InterviewRoom() {
                   )}
                 </div>
               </div>
-              <h1 className="mt-4 text-xl sm:text-2xl font-medium leading-snug tracking-tight text-zinc-50 lg:text-[28px]">
+              <h1 className="mt-4 text-2xl sm:text-3xl font-medium leading-snug tracking-tight text-zinc-50 lg:text-[32px] xl:text-4xl">
                 {question}
               </h1>
-              <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-zinc-500">
+              <p className="mt-3 sm:mt-4 text-sm sm:text-base text-zinc-500">
                 Speak naturally, as you would in a real interview. Aim for under two minutes.
               </p>
 
@@ -277,10 +277,10 @@ export default function InterviewRoom() {
           )}
         </section>
 
-        {/* Video Section - Smaller on mobile, right side on desktop */}
-        <section className="relative flex flex-1 items-center justify-center bg-zinc-950 p-4 sm:p-8 lg:p-12">
-          <div className="relative w-full max-w-md lg:max-w-2xl">
-            {isRecording && <div className="absolute -inset-2 sm:-inset-3 rounded-[20px] sm:rounded-[28px] bg-white/[0.06] blur-xl motion-safe:animate-breathe" />}
+        {/* Video Section - Better proportions on desktop */}
+        <section className="relative flex flex-1 items-center justify-center bg-zinc-950 p-4 sm:p-6 lg:p-8 xl:p-10">
+          <div className="relative w-full max-w-lg lg:max-w-3xl xl:max-w-4xl">
+            {isRecording && <div className="absolute -inset-2 sm:-inset-3 lg:-inset-4 rounded-[20px] sm:rounded-[28px] bg-white/[0.06] blur-xl motion-safe:animate-breathe" />}
             <div className="relative aspect-video w-full overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 bg-zinc-900">
               <video ref={videoRef} autoPlay muted playsInline className="h-full w-full scale-x-[-1] object-cover" />
               {permissionState === 'pending' && (
