@@ -202,17 +202,8 @@ app: Any = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:5500",
-        "http://localhost:5500",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://nilgen.app",
-        "https://www.nilgen.app",
-        "https://nilgen-frontend.vercel.app",
-        "https://*.vercel.app",  # All Vercel preview deploys
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins for now
+    allow_credentials=False,  # Must be False when allow_origins is "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
