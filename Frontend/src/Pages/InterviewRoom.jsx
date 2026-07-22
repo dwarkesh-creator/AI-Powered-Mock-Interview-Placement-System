@@ -181,24 +181,26 @@ export default function InterviewRoom() {
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950 bg-grain text-zinc-50">
-      <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+      <header className="flex items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6 sm:py-4">
         <button
           onClick={() => navigate('/dashboard')}
           className="flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-zinc-200"
         >
           <X className="h-4 w-4" strokeWidth={1.75} />
-          Exit interview
+          <span className="hidden sm:inline">Exit interview</span>
+          <span className="sm:hidden">Exit</span>
         </button>
         {!summary && question && (
-          <span className="font-data text-xs text-zinc-500">
-            Question {questionNumber} of {interviewConfig.totalQuestions}
+          <span className="font-data text-[10px] text-zinc-500 sm:text-xs">
+            Q{questionNumber}/{interviewConfig.totalQuestions}
           </span>
         )}
-        <span className="font-data w-16 text-right text-xs text-zinc-500">{formatTime(sessionSeconds)}</span>
+        <span className="font-data text-[10px] text-zinc-500 sm:text-xs sm:w-16 sm:text-right">{formatTime(sessionSeconds)}</span>
       </header>
 
       <div className="flex flex-1 flex-col lg:flex-row">
-        <section className="flex flex-1 flex-col justify-center border-b border-white/10 px-8 py-12 lg:w-[42%] lg:flex-none lg:border-b-0 lg:border-r lg:px-12">
+        {/* Interview Content Section - Full width on mobile, left side on desktop */}
+        <section className="flex flex-1 flex-col justify-center px-4 py-6 sm:px-8 sm:py-12 lg:w-[42%] lg:flex-none lg:border-r lg:border-white/10 lg:px-12">
           {summary ? (
             <InterviewSummary summary={summary} onDone={() => navigate('/dashboard')} />
           ) : isStarting ? (
@@ -222,33 +224,33 @@ export default function InterviewRoom() {
               <div className="flex items-center gap-3">
                 {interviewConfig.company && interviewConfig.company.id !== 'general' && (
                   <div
-                    className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-2xl"
+                    className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-xl sm:text-2xl"
                     title={interviewConfig.company.displayName}
                   >
                     {interviewConfig.company.logo}
                   </div>
                 )}
                 <div className="flex-1">
-                  <span className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                  <span className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-zinc-500">
                     {interviewConfig.company && interviewConfig.company.id !== 'general'
                       ? `${interviewConfig.company.displayName} · ${interviewConfig.role} Interview`
                       : `${interviewConfig.role} Interview`}
                   </span>
                   {interviewConfig.company && interviewConfig.company.id !== 'general' && (
-                    <p className="mt-0.5 text-[10px] text-zinc-600">
+                    <p className="mt-0.5 text-[9px] sm:text-[10px] text-zinc-600">
                       {interviewConfig.company.interviewStyle} style
                     </p>
                   )}
                 </div>
               </div>
-              <h1 className="mt-4 text-2xl font-medium leading-snug tracking-tight text-zinc-50 lg:text-[28px]">
+              <h1 className="mt-4 text-xl sm:text-2xl font-medium leading-snug tracking-tight text-zinc-50 lg:text-[28px]">
                 {question}
               </h1>
-              <p className="mt-4 text-sm text-zinc-500">
+              <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-zinc-500">
                 Speak naturally, as you would in a real interview. Aim for under two minutes.
               </p>
 
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="mt-4 sm:mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-3 sm:p-4">
                 <AnswerRecorder
                   question={question}
                   questionAudio={questionAudio}
@@ -266,7 +268,7 @@ export default function InterviewRoom() {
               )}
 
               {permissionState === 'denied' && (
-                <p className="mt-6 flex items-start gap-2 text-xs text-red-400/90">
+                <p className="mt-4 sm:mt-6 flex items-start gap-2 text-xs text-red-400/90">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
                   Camera and microphone access was blocked. Enable it in your browser's site settings and reload to answer.
                 </p>
@@ -275,10 +277,11 @@ export default function InterviewRoom() {
           )}
         </section>
 
-        <section className="relative flex flex-1 items-center justify-center bg-zinc-950 p-8 lg:p-12">
-          <div className="relative aspect-video w-full max-w-2xl">
-            {isRecording && <div className="absolute -inset-3 rounded-[28px] bg-white/[0.06] blur-xl motion-safe:animate-breathe" />}
-            <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-zinc-900">
+        {/* Video Section - Smaller on mobile, right side on desktop */}
+        <section className="relative flex flex-1 items-center justify-center bg-zinc-950 p-4 sm:p-8 lg:p-12">
+          <div className="relative w-full max-w-md lg:max-w-2xl">
+            {isRecording && <div className="absolute -inset-2 sm:-inset-3 rounded-[20px] sm:rounded-[28px] bg-white/[0.06] blur-xl motion-safe:animate-breathe" />}
+            <div className="relative aspect-video w-full overflow-hidden rounded-xl sm:rounded-2xl border border-white/10 bg-zinc-900">
               <video ref={videoRef} autoPlay muted playsInline className="h-full w-full scale-x-[-1] object-cover" />
               {permissionState === 'pending' && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900">
@@ -293,7 +296,7 @@ export default function InterviewRoom() {
                 </div>
               )}
               {permissionState === 'granted' && (
-                <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2.5 py-1 text-[11px] font-medium text-zinc-200 backdrop-blur">
+                <span className="absolute left-2 top-2 sm:left-3 sm:top-3 inline-flex items-center gap-1.5 rounded-full bg-black/50 px-2 sm:px-2.5 py-0.5 sm:py-1 text-[10px] sm:text-[11px] font-medium text-zinc-200 backdrop-blur">
                   <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
                   LIVE
                 </span>
@@ -308,7 +311,8 @@ export default function InterviewRoom() {
         </section>
       </div>
 
-      <footer className="border-t border-white/10 px-6 py-3 text-center">
+      {/* Footer - Fixed at bottom on mobile, hidden when keyboard is open */}
+      <footer className="border-t border-white/10 px-4 py-2 sm:px-6 sm:py-3 text-center">
         <BuiltBy />
       </footer>
     </div>

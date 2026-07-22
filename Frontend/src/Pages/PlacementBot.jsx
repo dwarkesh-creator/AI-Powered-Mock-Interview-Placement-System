@@ -105,21 +105,21 @@ export default function PlacementBot() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8 lg:px-12 lg:py-10">
-      <header className="mb-6">
-        <p className="text-sm text-zinc-500">Placement</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight text-zinc-50">
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-10">
+      <header className="mb-4 sm:mb-6">
+        <p className="text-xs sm:text-sm text-zinc-500">Placement</p>
+        <h1 className="mt-1 text-xl sm:text-2xl font-semibold tracking-tight text-zinc-50">
           Career bot &amp; placement estimate
         </h1>
       </header>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         {/* Metrics form */}
-        <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.02] p-6 lg:h-[75vh] lg:min-h-[560px]">
+        <div className="flex flex-col rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 lg:h-[75vh] lg:min-h-[560px]">
           <h2 className="text-sm font-medium text-zinc-200">Your metrics</h2>
           <p className="mt-1 text-xs text-zinc-500">Used to estimate placement readiness.</p>
 
-          <div className="mt-5 space-y-5">
+          <div className="mt-4 sm:mt-5 space-y-4 sm:space-y-5">
             <div>
               <label htmlFor="cgpa" className="mb-1.5 block text-xs font-medium text-zinc-400">
                 CGPA (out of 10)
@@ -133,7 +133,7 @@ export default function PlacementBot() {
                 value={cgpa}
                 onChange={(e) => setCgpa(e.target.value)}
                 placeholder="8.4"
-                className="font-data w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-50 placeholder:text-zinc-600"
+                className="font-data w-full rounded-xl border border-white/10 bg-zinc-950 px-3 sm:px-3.5 py-2 sm:py-2.5 text-sm text-zinc-50 placeholder:text-zinc-600"
               />
             </div>
 
@@ -145,7 +145,7 @@ export default function PlacementBot() {
                 id="target-role"
                 value={targetRole}
                 onChange={(e) => setTargetRole(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-50"
+                className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 sm:px-3.5 py-2 sm:py-2.5 text-sm text-zinc-50"
               >
                 <option value="">Select a role</option>
                 {targetRoles.map((role) => (
@@ -167,12 +167,12 @@ export default function PlacementBot() {
                   value={skillInput}
                   onChange={(e) => setSkillInput(e.target.value)}
                   placeholder="e.g. React, Python"
-                  className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-50 placeholder:text-zinc-600"
+                  className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 sm:px-3.5 py-2 sm:py-2.5 text-sm text-zinc-50 placeholder:text-zinc-600"
                 />
                 <button
                   type="submit"
                   aria-label="Add skill"
-                  className="flex shrink-0 items-center justify-center rounded-xl border border-white/10 px-3 text-zinc-300 transition-colors hover:border-white/20 hover:text-white"
+                  className="flex shrink-0 items-center justify-center rounded-xl border border-white/10 px-3 text-zinc-300 transition-colors hover:border-white/20 hover:text-white active:scale-95"
                 >
                   <Plus className="h-4 w-4" strokeWidth={1.75} />
                 </button>
@@ -189,7 +189,7 @@ export default function PlacementBot() {
                       <button
                         onClick={() => removeSkill(skill)}
                         aria-label={`Remove ${skill}`}
-                        className="rounded-full p-0.5 text-zinc-500 transition-colors hover:text-zinc-200"
+                        className="rounded-full p-0.5 text-zinc-500 transition-colors hover:text-zinc-200 active:scale-90"
                       >
                         <X className="h-3 w-3" strokeWidth={2} />
                       </button>
@@ -200,8 +200,8 @@ export default function PlacementBot() {
             </div>
           </div>
 
-          <div className="mt-auto pt-6">
-            <div className="rounded-xl border border-white/10 bg-zinc-950 p-4">
+          <div className="mt-auto pt-4 sm:pt-6">
+            <div className="rounded-xl border border-white/10 bg-zinc-950 p-3 sm:p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
                 Estimated readiness
               </p>
@@ -223,7 +223,7 @@ export default function PlacementBot() {
 
         {/* Chat */}
         <div className="flex h-[520px] flex-col rounded-2xl border border-white/10 bg-white/[0.02] lg:h-[75vh] lg:min-h-[560px]">
-          <div className="flex items-center gap-2 border-b border-white/10 px-5 py-4">
+          <div className="flex items-center gap-2 border-b border-white/10 px-4 sm:px-5 py-3 sm:py-4">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white">
               <Sparkles className="h-3.5 w-3.5 text-black" strokeWidth={2} />
             </div>
@@ -231,7 +231,7 @@ export default function PlacementBot() {
             <span className="ml-auto text-xs text-emerald-400/70">● AI-powered</span>
           </div>
 
-          <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
+          <div className="flex-1 space-y-3 overflow-y-auto px-4 sm:px-5 py-3 sm:py-4">
             {messages.map((message) => (
               <ChatBubble key={message.id} role={message.role} content={message.content} />
             ))}
@@ -241,20 +241,20 @@ export default function PlacementBot() {
 
           <form
             onSubmit={sendMessage}
-            className="flex items-center gap-2 border-t border-white/10 p-4"
+            className="flex items-center gap-2 border-t border-white/10 p-3 sm:p-4"
           >
             <input
               type="text"
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Ask about resumes, roles, or prep…"
-              className="w-full rounded-full border border-white/10 bg-zinc-950 px-4 py-2.5 text-sm text-zinc-50 placeholder:text-zinc-600"
+              className="w-full rounded-full border border-white/10 bg-zinc-950 px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-zinc-50 placeholder:text-zinc-600"
             />
             <button
               type="submit"
               disabled={!chatInput.trim() || isBotTyping}
               aria-label="Send message"
-              className="flex shrink-0 items-center justify-center rounded-full bg-white p-2.5 text-black transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+              className="flex shrink-0 items-center justify-center rounded-full bg-white p-2 sm:p-2.5 text-black transition-transform hover:bg-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Send className="h-4 w-4" strokeWidth={1.75} />
             </button>
