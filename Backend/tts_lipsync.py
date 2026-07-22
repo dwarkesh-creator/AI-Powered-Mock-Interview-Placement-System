@@ -53,22 +53,17 @@ def _find_rhubarb_binary() -> Optional[Path]:
     return matches[0] if matches else None
 
 
-def _generate_audio_azure(question: str, speech_key: str, endpoint: str, voice: str) -> bytes:
+def _generate_audio_azure(question: str, speech_key: str, region: str, voice: str) -> bytes:
     """Generate audio using Azure Speech Services."""
     try:
         import azure.cognitiveservices.speech as speechsdk
-        from urllib.parse import urlparse
     except ImportError as exc:
         raise AudioSynthesisError(
             "Azure Speech SDK not installed. Run: pip install azure-cognitiveservices-speech"
         ) from exc
     
-    # Parse endpoint URL to get base URL
-    parsed = urlparse(endpoint)
-    base_endpoint = f"{parsed.scheme}://{parsed.netloc}"
-    
-    # Configure Azure Speech with endpoint (not region!)
-    speech_config = speechsdk.SpeechConfig(subscription=speech_key, endpoint=base_endpoint)
+    # Configure Azure Speech with region (simpler and more reliable than endpoint)
+    speech_config = speechsdk.SpeechConfig(subscription=speech_key, region=region)
     speech_config.speech_synthesis_voice_name = voice
     
     # Set output format to WAV (Riff24Khz16BitMonoPcm includes WAV header)
@@ -170,7 +165,7 @@ def generate_mouth_cues(audio_path: Path, dialog: str) -> List[Dict[str, Any]]:
 def synthesize_interview_question(
     question: str,
     speech_key: Optional[str] = None,
-    endpoint: Optional[str] = None,
+    region: Optional[str] = None,
     voice: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create a saved Azure TTS WAV and attach Rhubarb cues when available."""
@@ -178,7 +173,7 @@ def synthesize_interview_question(
     
     # Get Azure credentials from environment if not provided
     speech_key = speech_key or os.environ.get("AZURE_SPEECH_KEY")
-    endpoint = endpoint or os.environ.get("AZURE_SPEECH_ENDPOINT")
+    region = region or os.environ.get("AZURE_SPEECH_REGION")
     voice = voice or os.environ.get("AZURE_TTS_VOICE", DEFAULT_TTS_VOICE)
     
     if not speech_key:
@@ -186,9 +181,9 @@ def synthesize_interview_question(
             "Azure Speech key is required. Set AZURE_SPEECH_KEY environment variable."
         )
     
-    if not endpoint:
+    if not region:
         raise AudioSynthesisError(
-            "Azure Speech endpoint is required. Set AZURE_SPEECH_ENDPOINT environment variable."
+            "Azure Speech region is required. Set AZURE_SPEECH_REGION environment variable."
         )
     
     clean_question = " ".join(str(question or "").split())
@@ -203,7 +198,7 @@ def synthesize_interview_question(
                 # Backoff: wait 2s, then 4s
                 time.sleep(2 ** attempt)
             
-            audio_data = _generate_audio_azure(clean_question, speech_key, endpoint, voice)
+            audio_data = _generate_audio_azure(clean_question, speech_key, region, voice)
             if not audio_data:
                 raise AudioSynthesisError("Azure TTS returned an empty audio response.")
             break
