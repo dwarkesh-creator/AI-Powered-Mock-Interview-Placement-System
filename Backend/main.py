@@ -138,6 +138,87 @@ _DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "Database", "nilgen.db")
 SESSIONS_STORE: Dict[str, List[Dict[str, Any]]] = {}   # user_id -> [session, ...]
 TOKENS: Dict[str, str] = {}                             # token -> user_id
 
+# ── Gemini API Key Rotation (Multi-Key Support) ────────────────────────────────
+_GEMINI_KEY_INDEX = 0  # Track which key we're currently using
+_GEMINI_KEY_FAILURE_COUNT: Dict[int, int] = {}  # Track failures per key
+
+def _get_gemini_keys() -> List[str]:
+    """Get all available Gemini API keys from environment."""
+    keys = []
+    
+    # Primary key
+    primary_key = (os.environ.get("GEMINI_API_KEY") or "").strip().strip('"').strip("'")
+    if primary_key:
+        keys.append(primary_key)
+    
+    # Additional keys (GEMINI_API_KEY_2, GEMINI_API_KEY_3, etc.)
+    for i in range(2, 10):  # Support up to 9 keys
+        key = (os.environ.get(f"GEMINI_API_KEY_{i}") or "").strip().strip('"').strip("'")
+        if key:
+            keys.append(key)
+    
+    return keys
+
+def _get_next_gemini_key() -> str:
+    """Get next available Gemini API key using round-robin rotation."""
+    global _GEMINI_KEY_INDEX
+    
+    keys = _get_gemini_keys()
+    if not keys:
+        raise HTTPException(status_code=503, detail="No Gemini API keys configured.")
+    
+    if len(keys) == 1:
+        return keys[0]
+    
+    # Round-robin: try each key in sequence
+    selected_key = keys[_GEMINI_KEY_INDEX % len(keys)]
+    _GEMINI_KEY_INDEX = (_GEMINI_KEY_INDEX + 1) % len(keys)
+    
+    return selected_key
+
+def _try_gemini_with_rotation(
+    func: callable,
+    *args,
+    **kwargs
+) -> Any:
+    """
+    Try a Gemini API call with automatic key rotation on rate limit errors.
+    
+    If a key hits rate limits (429 or RESOURCE_EXHAUSTED), automatically
+    switches to the next key and retries.
+    """
+    keys = _get_gemini_keys()
+    if not keys:
+        raise HTTPException(status_code=503, detail="No Gemini API keys configured.")
+    
+    last_error = None
+    
+    # Try each key once
+    for attempt in range(len(keys)):
+        try:
+            api_key = _get_next_gemini_key()
+            return func(api_key, *args, **kwargs)
+        except Exception as exc:
+            last_error = exc
+            error_str = str(exc).lower()
+            
+            # Check if it's a rate limit error
+            if "429" in error_str or "resource_exhausted" in error_str or "quota" in error_str:
+                warnings.warn(
+                    f"Gemini API key #{attempt + 1} hit rate limit, rotating to next key...",
+                    RuntimeWarning
+                )
+                continue  # Try next key
+            else:
+                # Non-rate-limit error, don't retry
+                raise
+    
+    # All keys failed
+    raise HTTPException(
+        status_code=502,
+        detail=f"All Gemini API keys exhausted or failed: {last_error}"
+    )
+
 
 def _get_db_path() -> str:
     """Read at call time so monkeypatching NILGEN_DB_PATH in tests works."""
@@ -948,12 +1029,12 @@ def _attach_interview_audio(
 @app.post("/api/interview/next-turn", response_model=InterviewTurnResponse, tags=["ai"])
 def interview_next_turn(body: InterviewTurnRequest):
     history = _normalise_interview_history(body.history)
-    gemini_key = (os.environ.get("GEMINI_API_KEY") or "").strip().strip('"').strip("'")
-    if not gemini_key:
-        raise HTTPException(status_code=503, detail="Gemini API key is not configured.")
-
+    
+    # Use key rotation for interview generation
     try:
-        turn = _generate_gemini_interview_turn(gemini_key, history, body)
+        turn = _try_gemini_with_rotation(_generate_gemini_interview_turn, history, body)
+        # Get a key for TTS (can be any key since Azure TTS is separate)
+        gemini_key = _get_gemini_keys()[0] if _get_gemini_keys() else ""
         return _attach_interview_audio(turn, gemini_key)
     except HTTPException:
         raise
@@ -1140,14 +1221,15 @@ def _generate_gemini_chat_reply(api_key: str, prompt: str) -> str:
 
 @app.post("/api/chat", response_model=ChatResponse, tags=["ai"])
 def chat_endpoint(body: ChatRequest):
-    gemini_key = (os.environ.get("GEMINI_API_KEY") or "").strip().strip('"').strip("'")
     user_prompt = _build_chat_prompt(body)
-
-    if gemini_key:
+    
+    # Try with key rotation
+    keys = _get_gemini_keys()
+    if keys:
         try:
-            return ChatResponse(reply=_generate_gemini_chat_reply(gemini_key, user_prompt))
+            reply = _try_gemini_with_rotation(_generate_gemini_chat_reply, user_prompt)
+            return ChatResponse(reply=reply)
         except Exception as exc:
-            import warnings
             warnings.warn(f"Gemini chat call failed: {exc}", RuntimeWarning)
 
     # Fallback: cycle through canned replies
