@@ -12,6 +12,7 @@ function useAzureSpeechToText() {
   const audioChunksRef = useRef([]);
   const streamRef = useRef(null);
   const shouldListenRef = useRef(false);
+  const recordingTimerRef = useRef(null);
 
   const sendToAzure = useCallback(async (audioBlob) => {
     const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -76,10 +77,31 @@ function useAzureSpeechToText() {
       streamRef.current = stream;
       console.log('[Azure STT] Microphone access granted');
 
-      // Create MediaRecorder
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm' // Use webm for better browser compatibility
-      });
+      // Create MediaRecorder with fallback to default format
+      let mediaRecorder;
+      const mimeTypes = [
+        'audio/webm',
+        'audio/webm;codecs=opus',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        ''  // Let browser choose
+      ];
+      
+      let selectedMimeType = '';
+      for (const mimeType of mimeTypes) {
+        if (!mimeType || MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          console.log('[Azure STT] Using MIME type:', mimeType || 'browser default');
+          break;
+        }
+      }
+      
+      if (selectedMimeType) {
+        mediaRecorder = new MediaRecorder(stream, { mimeType: selectedMimeType });
+      } else {
+        mediaRecorder = new MediaRecorder(stream);
+      }
+      
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
@@ -128,6 +150,14 @@ function useAzureSpeechToText() {
       mediaRecorder.start();
       setIsListening(true);
       console.log('[Azure STT] Started listening');
+      
+      // Auto-stop after 10 seconds to send audio to Azure
+      recordingTimerRef.current = setTimeout(() => {
+        console.log('[Azure STT] Auto-stopping after 10 seconds');
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+      }, 10000);
     } catch (err) {
       console.error('[Azure STT] Startup error:', err);
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
@@ -145,6 +175,10 @@ function useAzureSpeechToText() {
   const stopListening = useCallback(() => {
     console.log('[Azure STT] Stopping listening');
     shouldListenRef.current = false;
+    
+    if (recordingTimerRef.current) {
+      clearTimeout(recordingTimerRef.current);
+    }
 
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       console.log('[Azure STT] Stopping recorder in state:', mediaRecorderRef.current.state);
