@@ -201,10 +201,10 @@ function AnswerRecorder({
             </p>
           </div>
 
-          {(transcript?.trim() || manualAnswer?.trim()) && (
+          {transcript?.trim() && (
             <button
               type="button"
-              onClick={() => submitAnswer(transcript || manualAnswer)}
+              onClick={() => submitAnswer(transcript)}
               disabled={submitDisabled}
               className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:border-white/20 hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
             >
