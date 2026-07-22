@@ -123,7 +123,7 @@ NilGen provides:
   - **Conversational Intelligence**: Maintains context across multiple turns, generating follow-up questions based on previous answers
   - **Adaptive Interview Flow**: Dynamically adjusts question difficulty and topic based on candidate expertise
   - **Company-Specific Simulation**: Replicates interview styles of Google, Amazon, Microsoft, TCS, and 10+ other companies
-  - **Natural Speech Synthesis**: Converts interview questions to lifelike speech with configurable accents
+  - **High-Availability Architecture**: Multi-provider failover system for uninterrupted service
 - **Natural Language Processing (NLP)**:
   - **Scikit-learn** - TF-IDF vectorization and cosine similarity for answer grading
   - **NLTK** - Text preprocessing and tokenization
@@ -135,7 +135,7 @@ NilGen provides:
   - Head movement tracking for steadiness scoring
 - **Speech Processing**:
   - **Speech Recognition API** - Real-time audio transcription
-  - **Text-to-Speech (TTS)** - Natural voice synthesis with multiple accents
+  - **Azure Cognitive Services** - Enterprise-grade text-to-speech with neural voices
   - **Rhubarb Lip Sync** - Phoneme extraction for realistic avatar animation
 - **Machine Learning Models**:
   - Pre-trained emotion detection model (quantized TFLite)
@@ -398,7 +398,35 @@ AI-Powered-Mock-Interview-Placement-System/
 - Role-specific recommendations
 - CGPA and skills-based advice
 
-------
+---
+
+## 🏭 Production Infrastructure
+
+### Enterprise-Grade Voice Synthesis
+- **Azure Cognitive Services TTS** - Professional text-to-speech with natural Indian-English accent (Kunal voice)
+- **High throughput** - 20 requests/minute handling concurrent interview sessions
+- **Generous free tier** - 500,000 characters/month for cost-effective scaling
+- **Premium voice quality** - Neural TTS models for lifelike speech synthesis
+
+### High-Availability Architecture
+- **Multi-provider LLM failover** - Automatic fallback system ensures zero downtime during peak usage
+- **Intelligent load distribution** - Round-robin request distribution across multiple providers for optimal performance
+- **Graceful degradation** - System remains fully operational even during individual provider outages
+- **Health monitoring** - Built-in provider health checks and automatic recovery
+
+### Production-Ready Media Handling
+- **CORS-compliant audio streaming** - Cross-origin resource sharing properly configured for secure media delivery
+- **Web Audio API integration** - Real-time audio analysis powering avatar lip-sync and mouth animations
+- **Browser compatibility** - Thoroughly tested across Chrome, Edge, Firefox, and Safari
+- **Optimized delivery** - Efficient audio caching and streaming for reduced latency
+
+### User Experience & Security
+- **Professional landing page** - Clean onboarding flow with guest access, sign-up, and sign-in options
+- **Secure authentication** - Token-based auth with proper session management
+- **Guest mode** - Full feature access without account creation for quick demos
+- **Responsive design** - Seamless experience across desktop and mobile devices
+
+---
 
 ## 🧪 Testing
 
