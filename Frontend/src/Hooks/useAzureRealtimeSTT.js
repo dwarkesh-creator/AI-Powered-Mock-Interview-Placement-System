@@ -11,6 +11,8 @@ function useAzureRealtimeSTT() {
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const recognizerRef = useRef(null);
   const shouldListenRef = useRef(false);
+  const tokenExpiryRef = useRef(null);
+  const refreshTimerRef = useRef(null);
 
   // Load Azure Speech SDK dynamically
   useEffect(() => {
@@ -61,6 +63,24 @@ function useAzureRealtimeSTT() {
 
       const { token, region } = await response.json();
       console.log('[Azure Realtime STT] Token received, region:', region);
+
+      // Token expires in 10 minutes, refresh at 8 minutes
+      tokenExpiryRef.current = Date.now() + (10 * 60 * 1000);
+      
+      // Set up auto-refresh at 8 minutes
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+      refreshTimerRef.current = setTimeout(() => {
+        console.log('[Azure Realtime STT] Token expiring soon, refreshing...');
+        // Stop and restart with new token
+        if (shouldListenRef.current) {
+          stopListening();
+          setTimeout(() => {
+            startListening();
+          }, 500);
+        }
+      }, 8 * 60 * 1000); // Refresh at 8 minutes
 
       // Configure Azure Speech with token (not API key!)
       const speechConfig = window.SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
@@ -130,6 +150,12 @@ function useAzureRealtimeSTT() {
   const stopListening = useCallback(() => {
     console.log('[Azure Realtime STT] Stopping listening');
     shouldListenRef.current = false;
+
+    // Clear refresh timer
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
 
     if (recognizerRef.current) {
       recognizerRef.current.stopContinuousRecognitionAsync(
