@@ -289,8 +289,13 @@ app: Any = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for now
-    allow_credentials=False,  # Must be False when allow_origins is "*"
+    allow_origins=[
+        "https://prepbudyy.tech",
+        "https://www.prepbudyy.tech",
+        "http://localhost:5173",  # Local development
+        "http://localhost:3000",  # Alternative local port
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
