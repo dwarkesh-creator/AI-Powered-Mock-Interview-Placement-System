@@ -181,21 +181,29 @@ def synthesize_interview_question(
     voice: str = DEFAULT_TTS_VOICE,
 ) -> Dict[str, Any]:
     """Create a saved Gemini TTS WAV and attach Rhubarb cues when available."""
+    import time
+    
     clean_question = " ".join(str(question or "").split())
     if not clean_question:
         raise AudioSynthesisError("Question text is required for speech synthesis.")
     
     last_error: Optional[Exception] = None
-    for _ in range(2):
+    # Try 3 times with backoff
+    for attempt in range(3):
         try:
+            if attempt > 0:
+                # Backoff: wait 2s, then 4s
+                time.sleep(2 ** attempt)
+            
             pcm = _generate_pcm(clean_question, api_key, model, voice)
             if not pcm:
                 raise AudioSynthesisError("Gemini TTS returned an empty audio response.")
             break
         except Exception as exc:
             last_error = exc
+            warnings.warn(f"TTS attempt {attempt + 1}/3 failed: {exc}", RuntimeWarning)
     else:
-        raise AudioSynthesisError("Gemini TTS could not generate question audio.") from last_error
+        raise AudioSynthesisError(f"Gemini TTS failed after 3 attempts. Last error: {last_error}") from last_error
     
     filename = f"interview-question-{uuid.uuid4().hex}.wav"
     audio_path = ensure_generated_audio_directory() / filename
