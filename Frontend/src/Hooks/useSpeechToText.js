@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 
 const RECOVERABLE_ERRORS = new Set(['no-speech', 'aborted', 'audio-capture']);
+const MAX_RESTART_ATTEMPTS = 5;
 
 function useSpeechToText() {
   const [transcript, setTranscript] = useState('');
@@ -9,6 +10,7 @@ function useSpeechToText() {
   const recognitionRef = useRef(null);
   const shouldListenRef = useRef(false);
   const restartCounterRef = useRef(0);
+  const lastTranscriptRef = useRef('');
 
   const startListening = useCallback(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -22,53 +24,75 @@ function useSpeechToText() {
     setTranscript('');
     shouldListenRef.current = true;
     restartCounterRef.current = 0;
+    lastTranscriptRef.current = '';
 
     function createRecognition() {
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
-      // Important: Set maxAlternatives to allow better transcription
       recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         console.log('[STT] Recognition started');
+        setIsListening(true);
       };
 
       recognition.onresult = (event) => {
-        let text = '';
-        // Combine all results (interim and final)
+        let finalText = '';
+        let interimText = '';
+        
+        // Separate final and interim results
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
-          text += transcript;
-          // Log if final
           if (event.results[i].isFinal) {
+            finalText += transcript + ' ';
             console.log('[STT] Final result:', transcript);
+          } else {
+            interimText += transcript;
           }
         }
-        if (text.trim()) {
-          setTranscript(text.trim());
+
+        // Update transcript with final + interim
+        const fullText = (lastTranscriptRef.current + finalText + interimText).trim();
+        if (fullText) {
+          setTranscript(fullText);
+        }
+        
+        // Store final text
+        if (finalText) {
+          lastTranscriptRef.current += finalText;
         }
       };
 
       recognition.onerror = (event) => {
         console.error('[STT] Error:', event.error);
         
+        // Auto-restart on recoverable errors
         if (RECOVERABLE_ERRORS.has(event.error)) {
-          // Auto-restart on recoverable errors (especially on mobile)
-          if (shouldListenRef.current && restartCounterRef.current < 3) {
+          if (shouldListenRef.current && restartCounterRef.current < MAX_RESTART_ATTEMPTS) {
             restartCounterRef.current++;
-            console.log('[STT] Auto-restarting after', event.error);
-            return;
+            console.log('[STT] Auto-restarting after', event.error, '(attempt', restartCounterRef.current, ')');
+            setTimeout(() => {
+              if (shouldListenRef.current) {
+                try {
+                  recognition.start();
+                } catch (err) {
+                  console.log('[STT] Restart failed:', err);
+                }
+              }
+            }, 100);
           }
           return;
         }
         
-        // Handle permission denied specifically
+        // Handle fatal errors
         if (event.error === 'not-allowed' || event.error === 'permission-denied') {
-          setError('Microphone permission denied. Please allow microphone access in browser settings.');
+          setError('Microphone permission denied. Please allow microphone access.');
         } else if (event.error === 'network') {
           setError('Network error. Check your internet connection.');
+        } else if (event.error === 'service-not-allowed') {
+          setError('Speech service not available. Try using Chrome browser.');
         } else {
           setError(`Speech recognition error: ${event.error}`);
         }
@@ -78,18 +102,24 @@ function useSpeechToText() {
 
       recognition.onend = () => {
         console.log('[STT] Recognition ended');
-        if (shouldListenRef.current && restartCounterRef.current < 3) {
-          // Auto-restart on mobile when recognition naturally ends
-          try {
-            restartCounterRef.current++;
-            console.log('[STT] Auto-restarting (attempt', restartCounterRef.current, ')');
-            recognition.start();
-          } catch (err) {
-            console.log('[STT] Could not restart:', err);
-          }
-          return;
+        
+        // Auto-restart if should still be listening
+        if (shouldListenRef.current && restartCounterRef.current < MAX_RESTART_ATTEMPTS) {
+          restartCounterRef.current++;
+          console.log('[STT] Auto-restarting (attempt', restartCounterRef.current, ')');
+          setTimeout(() => {
+            if (shouldListenRef.current) {
+              try {
+                recognition.start();
+              } catch (err) {
+                console.log('[STT] Restart failed:', err);
+                setIsListening(false);
+              }
+            }
+          }, 100);
+        } else {
+          setIsListening(false);
         }
-        setIsListening(false);
       };
 
       return recognition;
@@ -100,12 +130,11 @@ function useSpeechToText() {
 
     try {
       recognition.start();
-      setIsListening(true);
       console.log('[STT] Started listening');
     } catch (err) {
       console.error('[STT] Start error:', err);
       if (err.name === 'NotAllowedError') {
-        setError('Microphone permission denied. Please allow microphone access in your browser settings.');
+        setError('Microphone permission denied. Please allow microphone access.');
       } else {
         setError('Could not start speech recognition. Please reload and try again.');
       }
@@ -123,6 +152,7 @@ function useSpeechToText() {
 
   const resetTranscript = useCallback(() => {
     setTranscript('');
+    lastTranscriptRef.current = '';
     restartCounterRef.current = 0;
   }, []);
 
