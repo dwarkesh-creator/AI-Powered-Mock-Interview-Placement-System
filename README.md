@@ -1,4 +1,4 @@
-# 🎯 NilGen AI - Mock Interview, Career Chatbot & Placement System
+# 🎯 PrepBuddy AI - Mock Interview, Career Chatbot & Placement System
 
 > AI-powered interview preparation platform with realistic mock interviews, real-time feedback, performance analytics, and 24/7 career guidance
 
@@ -26,7 +26,7 @@
 
 ## 🎓 About
 
-**NilGen** is a comprehensive AI-powered mock interview and career preparation system designed to help job seekers excel in technical interviews. The platform combines realistic interview simulations, intelligent feedback analysis, and an AI career chatbot to provide end-to-end placement preparation support.
+**PrepBuddy** is a comprehensive AI-powered mock interview and career preparation system designed to help job seekers excel in technical interviews. The platform combines realistic interview simulations, intelligent feedback analysis, and an AI career chatbot to provide end-to-end placement preparation support.
 
 ### Problem Statement
 Candidates often struggle with interview preparation due to:
@@ -37,7 +37,7 @@ Candidates often struggle with interview preparation due to:
 - Uncertainty about company-specific interview patterns
 
 ### Solution
-NilGen provides:
+PrepBuddy provides:
 - **Realistic mock interviews** with AI-powered voice interviewer
 - **Real-time feedback** on confidence, correctness, and communication
 - **Personalized analytics** tracking progress over time
@@ -374,7 +374,7 @@ AI-Powered-Mock-Interview-Placement-System/
 │   └── llm/                    # LLM feedback
 │
 ├── Database/
-│   └── nilgen.db               # SQLite database
+│   └── prepbuddy.db               # SQLite database
 │
 ├── .gitignore
 ├── README.md

@@ -59,10 +59,10 @@ export default function Avatar2D({ analyserNode, isSpeaking = false, isListening
     };
   }, [analyserNode, isSpeaking]);
 
-  const status = isSpeaking ? 'Speaking' : (isListening ? 'Listening' : 'NilGen');
+  const status = isSpeaking ? 'Speaking' : (isListening ? 'Listening' : 'PrepBuddy');
 
   return (
-    <div className="inline-flex flex-col items-center gap-1.5" aria-label={`NilGen interviewer: ${status}`}>
+    <div className="inline-flex flex-col items-center gap-1.5" aria-label={`PrepBuddy interviewer: ${status}`}>
       {/* Star container with 3D lighting */}
       <div className="relative flex h-16 w-16 items-center justify-center">
         {/* Outer glow (animated when speaking) */}

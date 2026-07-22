@@ -18,7 +18,7 @@ function ProtectedRoute({ children, allowGuest = false }) {
 }
 
 /**
- * Route map for the NilGen SPA.
+ * Route map for the PrepBuddy SPA.
  *
  * `/interview` is deliberately kept OUTSIDE <AppLayout>: an active mock
  * interview is a focused, full-bleed experience and shouldn't compete

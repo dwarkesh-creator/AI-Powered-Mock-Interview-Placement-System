@@ -250,7 +250,7 @@ export default function InterviewRoom() {
                 Speak naturally, as you would in a real interview. Aim for under two minutes.
               </p>
 
-              {/* NilGen Interviewer Avatar */}
+              {/* PrepBuddy Interviewer Avatar */}
               <div className="mt-4 sm:mt-5">
                 <Avatar2D
                   analyserNode={interviewerAudioAnalyser}

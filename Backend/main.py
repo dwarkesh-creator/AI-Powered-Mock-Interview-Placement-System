@@ -132,7 +132,7 @@ except Exception:
     cv2 = None
 
 # ── DB setup ───────────────────────────────────────────────────────────────────
-_DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "Database", "nilgen.db")
+_DEFAULT_DB_PATH = os.path.join(_PROJECT_ROOT, "Database", "prepbuddy.db")
 
 # ── In-memory stores (fast path for sessions & auth tokens in this version) ───
 SESSIONS_STORE: Dict[str, List[Dict[str, Any]]] = {}   # user_id -> [session, ...]
@@ -227,8 +227,8 @@ def _call_llm_with_failover(
 
 
 def _get_db_path() -> str:
-    """Read at call time so monkeypatching NILGEN_DB_PATH in tests works."""
-    return os.environ.get("NILGEN_DB_PATH", _DEFAULT_DB_PATH)
+    """Read at call time so monkeypatching PREPBUDDY_DB_PATH in tests works."""
+    return os.environ.get("PREPBUDDY_DB_PATH", _DEFAULT_DB_PATH)
 
 
 def _get_db_connection() -> sqlite3.Connection:
@@ -281,7 +281,7 @@ async def lifespan(application: FastAPI):
 
 
 app: Any = FastAPI(
-    title="NilGen",
+    title="PrepBuddy",
     description="AI-Powered Mock Interview & Placement System backend.",
     version="1.0.0",
     lifespan=lifespan,
@@ -407,7 +407,7 @@ def _generate_token() -> str:
 
 @app.get("/", tags=["health"])
 def health_check():
-    return {"status": "ok", "service": "NilGen Backend"}
+    return {"status": "ok", "service": "PrepBuddy Backend"}
 
 
 @app.get("/api/debug/env", tags=["health"])
@@ -1105,7 +1105,7 @@ _MAX_CHAT_HISTORY = 8
 _MAX_CHAT_MESSAGE_CHARS = 2_000
 
 _CHAT_SYSTEM_PROMPT = """
-You are NilGen, a practical career and placement coach for Indian college students.
+You are PrepBuddy, a practical career and placement coach for Indian college students.
 
 Answer the CURRENT STUDENT MESSAGE using the student profile and recent conversation
 only as context. Treat short follow-ups such as "yes", "but how?", or "why?" as a

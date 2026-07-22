@@ -10,7 +10,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(() => {
     try {
-      const stored = localStorage.getItem('nilgen_auth');
+      const stored = localStorage.getItem('prepbuddy_auth');
       return stored ? JSON.parse(stored) : null;
     } catch {
       return null;
@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (email, password) => {
     const data = await apiLogin(email, password);
     const session = { userId: data.user_id, token: data.token, email };
-    localStorage.setItem('nilgen_auth', JSON.stringify(session));
+    localStorage.setItem('prepbuddy_auth', JSON.stringify(session));
     setAuth(session);
     return session;
   }, []);
@@ -28,7 +28,7 @@ export function AuthProvider({ children }) {
   const signup = useCallback(async (email, password) => {
     const data = await apiSignup(email, password);
     const session = { userId: data.user_id, token: data.token, email };
-    localStorage.setItem('nilgen_auth', JSON.stringify(session));
+    localStorage.setItem('prepbuddy_auth', JSON.stringify(session));
     setAuth(session);
     return session;
   }, []);
@@ -36,13 +36,13 @@ export function AuthProvider({ children }) {
   const loginAsGuest = useCallback(() => {
     const id = `guest-${crypto.randomUUID()}`;
     const session = { userId: id, token: id, email: null, isGuest: true };
-    localStorage.setItem('nilgen_auth', JSON.stringify(session));
+    localStorage.setItem('prepbuddy_auth', JSON.stringify(session));
     setAuth(session);
     return session;
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('nilgen_auth');
+    localStorage.removeItem('prepbuddy_auth');
     setAuth(null);
   }, []);
 

@@ -60,7 +60,7 @@ export default function Sidebar() {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white">
             <Sparkles className="h-4 w-4 text-black" strokeWidth={2} />
           </div>
-          <span className="text-sm font-semibold tracking-tight">NilGen</span>
+          <span className="text-sm font-semibold tracking-tight">PrepBuddy</span>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1">

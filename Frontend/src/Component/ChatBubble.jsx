@@ -1,5 +1,5 @@
 /**
- * Single message bubble for the NilGen chat. `role` is either
+ * Single message bubble for the PrepBuddy chat. `role` is either
  * 'user' or 'bot' — styling and alignment flip accordingly. User
  * bubbles reuse the same bg-white/text-black treatment as primary
  * buttons elsewhere, so "your own input" reads consistently app-wide.

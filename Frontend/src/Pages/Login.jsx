@@ -43,7 +43,7 @@ export default function Login() {
             <Sparkles className="h-5 w-5 text-black" strokeWidth={2} />
           </div>
           <h1 className="text-lg font-semibold tracking-tight text-zinc-50">
-            {isSignup ? 'Create your account' : 'Sign in to NilGen'}
+            {isSignup ? 'Create your account' : 'Sign in to PrepBuddy'}
           </h1>
           <p className="mt-1 text-sm text-zinc-500">Mock interviews &amp; placement prediction</p>
         </div>

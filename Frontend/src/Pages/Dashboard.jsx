@@ -91,7 +91,7 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-4xl font-bold tracking-tight">
-                  {isGuest ? 'Welcome to NilGen' : `Welcome back, ${firstName}`}
+                  {isGuest ? 'Welcome to PrepBuddy' : `Welcome back, ${firstName}`}
                 </h1>
                 {!isGuest && <Sparkles className="h-6 w-6 text-yellow-400" strokeWidth={1.5} />}
               </div>
