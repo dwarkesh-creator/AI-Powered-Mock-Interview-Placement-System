@@ -3,13 +3,16 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 /**
  * Real-time Azure Speech-to-Text using client-side SDK with secure token auth
  * Works on ALL browsers (Chrome, Safari, Firefox) on desktop and mobile
+ * Falls back to Web Speech API if Azure SDK fails to load
  */
 function useAzureRealtimeSTT() {
   const [transcript, setTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState(null);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
+  const [useWebSpeech, setUseWebSpeech] = useState(false);
   const recognizerRef = useRef(null);
+  const webSpeechRecognitionRef = useRef(null);
   const shouldListenRef = useRef(false);
   const tokenExpiryRef = useRef(null);
   const refreshTimerRef = useRef(null);
@@ -22,16 +25,22 @@ function useAzureRealtimeSTT() {
     }
 
     const script = document.createElement('script');
-    script.src = 'https://aka.ms/csspeech/jsbrowserpackage-1.32.0.min.js';
+    // Use Microsoft's CDN directly
+    script.src = 'https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@1.34.1/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle.min.js';
+    script.crossOrigin = 'anonymous';
+    
     script.onload = () => {
-      console.log('[Azure Realtime STT] SDK loaded');
+      console.log('[Azure Realtime STT] SDK loaded successfully');
       setIsSDKLoaded(true);
     };
-    script.onerror = () => {
-      console.error('[Azure Realtime STT] Failed to load SDK');
-      setError('Failed to load speech recognition SDK');
+    
+    script.onerror = (e) => {
+      console.error('[Azure Realtime STT] Failed to load SDK, falling back to Web Speech API');
+      setUseWebSpeech(true);
+      setIsSDKLoaded(false);
     };
-    document.body.appendChild(script);
+    
+    document.head.appendChild(script);
 
     return () => {
       if (script.parentNode) {
@@ -41,6 +50,59 @@ function useAzureRealtimeSTT() {
   }, []);
 
   const startListening = useCallback(async () => {
+    // Fallback to Web Speech API if Azure SDK failed to load
+    if (useWebSpeech) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        setError('Speech recognition not supported in this browser');
+        return;
+      }
+
+      console.log('[STT] Using Web Speech API fallback');
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      
+      recognition.onresult = (event) => {
+        let text = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          text += event.results[i][0].transcript;
+        }
+        if (text.trim()) {
+          setTranscript(text.trim());
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.error('[STT] Error:', event.error);
+        setError(`Speech recognition error: ${event.error}`);
+      };
+
+      recognition.onend = () => {
+        if (shouldListenRef.current) {
+          try {
+            recognition.start();
+          } catch (err) {
+            console.log('[STT] Could not restart');
+          }
+        } else {
+          setIsListening(false);
+        }
+      };
+
+      webSpeechRecognitionRef.current = recognition;
+      try {
+        recognition.start();
+        setIsListening(true);
+        shouldListenRef.current = true;
+      } catch (err) {
+        setError('Could not start speech recognition');
+      }
+      return;
+    }
+
+    // Original Azure code
     if (!isSDKLoaded || !window.SpeechSDK) {
       setError('Speech SDK not loaded yet');
       return;
@@ -145,7 +207,7 @@ function useAzureRealtimeSTT() {
       setIsListening(false);
       shouldListenRef.current = false;
     }
-  }, [isSDKLoaded]);
+  }, [isSDKLoaded, useWebSpeech]);
 
   const stopListening = useCallback(() => {
     console.log('[Azure Realtime STT] Stopping listening');
@@ -157,6 +219,15 @@ function useAzureRealtimeSTT() {
       refreshTimerRef.current = null;
     }
 
+    // Stop Web Speech API if using fallback
+    if (webSpeechRecognitionRef.current) {
+      webSpeechRecognitionRef.current.stop();
+      webSpeechRecognitionRef.current = null;
+      setIsListening(false);
+      return;
+    }
+
+    // Stop Azure recognizer
     if (recognizerRef.current) {
       recognizerRef.current.stopContinuousRecognitionAsync(
         () => {
