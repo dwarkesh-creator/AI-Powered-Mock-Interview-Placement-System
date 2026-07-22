@@ -302,17 +302,32 @@ python main.py
 
 ## 📸 Screenshots
 
+> **Note:** Take screenshots of your deployed application and add them here to showcase your project to potential employers and collaborators.
+
+**Recommended screenshots:**
+- Dashboard with recent interviews and analytics
+- Mock interview in progress with AI avatar
+- Performance analytics charts
+- Career guidance chatbot conversation
+
+**To add screenshots:**
+1. Take screenshots of your live site: https://nilgen-ai.vercel.app
+2. Save them in a `docs/screenshots/` folder
+3. Update the image links below
+
+<!-- Uncomment and update paths when you have screenshots
 ### Dashboard
-![Dashboard](https://via.placeholder.com/800x400?text=Dashboard+Screenshot)
+![Dashboard](docs/screenshots/dashboard.png)
 
 ### Mock Interview
-![Interview](https://via.placeholder.com/800x400?text=Interview+Room+Screenshot)
+![Interview](docs/screenshots/interview.png)
 
 ### Analytics
-![Analytics](https://via.placeholder.com/800x400?text=Analytics+Dashboard)
+![Analytics](docs/screenshots/analytics.png)
 
 ### Career Bot
-![Career Bot](https://via.placeholder.com/800x400?text=Placement+Bot+Screenshot)
+![Career Bot](docs/screenshots/career-bot.png)
+-->
 
 ---
 
