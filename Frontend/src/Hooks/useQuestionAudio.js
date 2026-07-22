@@ -145,6 +145,7 @@ export default function useQuestionAudio() {
 
     return new Promise((resolve) => {
       const audio = new Audio(source);
+      audio.crossOrigin = 'anonymous';  // Enable CORS for cross-origin audio
       let graph = null;
 
       try {
