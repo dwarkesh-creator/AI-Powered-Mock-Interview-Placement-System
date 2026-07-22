@@ -1251,6 +1251,86 @@ def chat_endpoint(body: ChatRequest):
     return ChatResponse(reply=_CANNED_REPLIES[idx])
 
 
+# ── Speech-to-Text (Azure) ─────────────────────────────────────────────────────
+
+@app.post("/api/transcribe", tags=["ai"])
+async def transcribe_endpoint(audio: UploadFile = File(...)):
+    """Transcribe audio using Azure Speech Services."""
+    if audio.content_type not in ["audio/wav", "audio/mpeg", "audio/x-wav", "audio/webm"]:
+        raise HTTPException(status_code=400, detail="Unsupported audio format. Use WAV or MP3.")
+    
+    try:
+        import azure.cognitiveservices.speech as speechsdk
+    except ImportError:
+        raise HTTPException(status_code=503, detail="Azure Speech SDK not installed.")
+    
+    # Get Azure credentials from environment
+    speech_key = os.environ.get("AZURE_SPEECH_KEY")
+    speech_endpoint = os.environ.get("AZURE_SPEECH_ENDPOINT")
+    
+    if not speech_key or not speech_endpoint:
+        raise HTTPException(status_code=503, detail="Azure Speech credentials not configured.")
+    
+    try:
+        # Read audio file
+        audio_data = await audio.read()
+        
+        # Parse endpoint to get region
+        from urllib.parse import urlparse
+        parsed = urlparse(speech_endpoint)
+        base_endpoint = f"{parsed.scheme}://{parsed.netloc}"
+        
+        # Configure Azure Speech with endpoint
+        speech_config = speechsdk.SpeechConfig(subscription=speech_key, endpoint=base_endpoint)
+        speech_config.speech_recognition_language = "en-US"
+        
+        # Create recognizer from audio data
+        audio_config = speechsdk.audio.AudioConfig(use_default_microphone=False)
+        # Use audio data from bytes
+        import io
+        audio_stream = speechsdk.audio.AudioInputStream(
+            speechsdk.audio.AudioStreamFormat.get_wave_format_pcm(
+                samples_per_second=16000,
+                bits_per_sample=16,
+                channels=1
+            )
+        )
+        
+        # For simplicity, write bytes to a temp file and read from there
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+            tmp.write(audio_data)
+            tmp_path = tmp.name
+        
+        try:
+            audio_config = speechsdk.audio.AudioConfig(filename=tmp_path)
+            recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_config)
+            
+            # Recognize speech
+            result = recognizer.recognize_once()
+            
+            if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+                transcript = result.text
+                return {"transcript": transcript, "confidence": 1.0}
+            elif result.reason == speechsdk.ResultReason.NoMatch:
+                return {"transcript": "", "error": "No speech detected"}
+            elif result.reason == speechsdk.ResultReason.Canceled:
+                error_details = result.cancellation_details
+                raise HTTPException(status_code=503, detail=f"Azure STT error: {error_details.reason}")
+        finally:
+            # Clean up temp file
+            import os as os_module
+            try:
+                os_module.unlink(tmp_path)
+            except:
+                pass
+                
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(exc)}")
+
+
 # ── Dev entrypoint ─────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     try:

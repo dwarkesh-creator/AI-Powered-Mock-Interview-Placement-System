@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import useConfidenceDetector from '../Hooks/useConfidenceDetector';
 import useQuestionAudio from '../Hooks/useQuestionAudio';
-import useSpeechToText from '../Hooks/useSpeechToText';
+import useAzureSpeechToText from '../Hooks/useAzureSpeechToText';
 import useTextToSpeech from '../Hooks/useTextToSpeech';
 
 function AnswerRecorder({
@@ -15,7 +15,7 @@ function AnswerRecorder({
   onInterviewerSpeakingChange,
   onListeningChange,
 }) {
-  const { transcript, isListening, error, startListening, stopListening, resetTranscript } = useSpeechToText();
+  const { transcript, isListening, error, startListening, stopListening, resetTranscript } = useAzureSpeechToText();
   const {
     audioAnalyser,
     isPlaying,
