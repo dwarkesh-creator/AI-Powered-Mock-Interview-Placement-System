@@ -205,6 +205,24 @@ export default function InterviewSetup() {
           </p>
         </header>
 
+        {/* Start Interview Button - Top */}
+        <div className="mt-8 flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+          <p className="hidden text-sm text-zinc-400 sm:block">
+            {selectedRole && selectedCompany
+              ? `${selectedRole.title} · ${selectedCompany.displayName} · ${difficulty}`
+              : 'Choose a role and company to continue'}
+          </p>
+          <button
+            type="button"
+            onClick={startInterview}
+            disabled={!selectedRole}
+            className="ml-auto inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Start 5-question interview
+            <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
+          </button>
+        </div>
+
         {/* View Toggle */}
         <section className="mt-10">
           <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-1.5">
@@ -466,23 +484,6 @@ export default function InterviewSetup() {
             })}
           </div>
         </section>
-
-        <div className="mt-10 flex items-center justify-between gap-4 border-t border-white/10 bg-zinc-950 py-5">
-          <p className="hidden text-sm text-zinc-500 sm:block">
-            {selectedRole && selectedCompany
-              ? `${selectedRole.title} · ${selectedCompany.displayName} · ${difficulty}`
-              : 'Choose a role to continue'}
-          </p>
-          <button
-            type="button"
-            onClick={startInterview}
-            disabled={!selectedRole}
-            className="ml-auto inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-medium text-black transition-colors hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Start 5-question interview
-            <ArrowRight className="h-4 w-4" strokeWidth={1.75} />
-          </button>
-        </div>
       </div>
     </div>
   );
