@@ -61,6 +61,20 @@ export default function InterviewRoom() {
   const [isInterviewerSpeaking, setIsInterviewerSpeaking] = useState(false);
   const [isInterviewerListening, setIsInterviewerListening] = useState(false);
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      const isSmallScreen = window.innerWidth < 768;
+      setIsMobile(isMobileDevice || isSmallScreen);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const interviewConfig = useMemo(
     () => ({ ...DEFAULT_INTERVIEW_CONFIG, ...(location.state?.interviewConfig || {}) }),
@@ -218,6 +232,23 @@ export default function InterviewRoom() {
         )}
         <span className="font-data text-[10px] text-zinc-500 sm:text-xs sm:w-16 sm:text-right">{formatTime(sessionSeconds)}</span>
       </header>
+
+      {/* Mobile Warning Banner */}
+      {isMobile && !summary && (
+        <div className="mx-4 mt-4 rounded-xl border border-orange-500/20 bg-orange-500/5 p-4 sm:mx-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-orange-400" strokeWidth={1.75} />
+            <div>
+              <p className="text-sm font-medium text-orange-300">
+                Limited Mobile Support
+              </p>
+              <p className="mt-1 text-xs text-orange-400/80 leading-relaxed">
+                Speech recognition may not work reliably on mobile browsers. For the best interview experience, please use a desktop browser (Chrome, Edge, or Safari).
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-1 flex-col lg:flex-row">
         {/* Interview Content Section - Full width on mobile, left side on desktop */}
