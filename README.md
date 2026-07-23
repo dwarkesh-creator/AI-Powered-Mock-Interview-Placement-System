@@ -303,27 +303,27 @@ python main.py
 ## 📸 Screenshots
 
 ### Login Page
-![Login Page](docs/screenshots/Login.png)
+![Login Page](document/Login.png)
 *Clean authentication interface with guest mode option for instant access*
 
 ### Dashboard
-![Dashboard](docs/screenshots/Dashboard.png)
+![Dashboard](document/Dashboard.png)
 *Track your interview performance, placement probability, and recent sessions at a glance*
 
 ### Mock Interview
-![Interview Room](docs/screenshots/Interview%20Room.png)
+![Interview Room](document/Interview%20Room.png)
 *Real-time AI-powered interview with video recording, speech recognition, and animated interviewer*
 
 ### Interview Feedback
-![Feedback](docs/screenshots/Feedback.png)
+![Feedback](document/Feedback.png)
 *Comprehensive performance analysis with scores, confidence metrics, and actionable improvement suggestions*
 
 ### Performance Analytics
-![Analytics](docs/screenshots/Analytics.png)
+![Analytics](document/Analytics.png)
 *Detailed insights with score trends, distribution charts, and role-based breakdowns*
 
 ### Career Guidance Bot
-![Career Bot](docs/screenshots/Career%20bot.png)
+![Career Bot](document/Career%20bot.png)
 *24/7 AI career coach providing personalized placement advice and interview preparation tips*
 
 ---
