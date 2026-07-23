@@ -57,7 +57,7 @@ export default function InterviewRoom() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [startError, setStartError] = useState(null);
   const [evaluationError, setEvaluationError] = useState(null);
-  const [isInterviewerAudioAnalyser, setInterviewerAudioAnalyser] = useState(null);
+  const [interviewerAudioAnalyser, setInterviewerAudioAnalyser] = useState(null);
   const [isInterviewerSpeaking, setIsInterviewerSpeaking] = useState(false);
   const [isInterviewerListening, setIsInterviewerListening] = useState(false);
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
