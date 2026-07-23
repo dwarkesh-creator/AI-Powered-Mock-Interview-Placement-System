@@ -289,12 +289,7 @@ app: Any = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://prepbudyy.tech",
-        "https://www.prepbudyy.tech",
-        "http://localhost:5173",  # Local development
-        "http://localhost:3000",  # Alternative local port
-    ],
+    allow_origin_regex=r"https://.*\.vercel\.app|https://prepbudyy\.tech|https://www\.prepbudyy\.tech|http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
