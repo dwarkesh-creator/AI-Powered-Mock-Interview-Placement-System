@@ -243,7 +243,7 @@ export default function InterviewRoom() {
                 Limited Mobile Support
               </p>
               <p className="mt-1 text-xs text-orange-400/80 leading-relaxed">
-                Speech recognition may not work reliably on mobile browsers. For the best interview experience, please use a desktop browser (Chrome, Edge, or Safari).
+                Speech recognition may not work reliably on mobile browsers. For the best interview experience, please use a desktop computer.
               </p>
             </div>
           </div>
