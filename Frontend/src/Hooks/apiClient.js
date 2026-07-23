@@ -4,6 +4,7 @@
  * are consistent across the entire frontend.
  */
 
+// Backend API URL - configured in vite.config.js for production builds
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 async function apiFetch(path, options = {}) {
