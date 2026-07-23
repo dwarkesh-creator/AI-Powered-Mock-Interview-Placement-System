@@ -289,7 +289,7 @@ app: Any = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https://.*\.vercel\.app|https://prepbudyy\.tech|https://www\.prepbudyy\.tech|http://localhost:\d+",
+    allow_origin_regex=r"https://.*\.vercel\.app|https://.*prepbudd?y\.tech|http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
