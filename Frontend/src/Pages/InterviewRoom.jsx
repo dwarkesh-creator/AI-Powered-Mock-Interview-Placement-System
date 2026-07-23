@@ -17,6 +17,17 @@ const DEFAULT_INTERVIEW_CONFIG = {
   totalQuestions: 5,
 };
 
+const LOADING_PHRASES = [
+  "Preparing your personalized interview...",
+  "Success is where preparation meets opportunity.",
+  "Every expert was once a beginner. You've got this!",
+  "Confidence comes from preparation and practice.",
+  "Your future self will thank you for practicing today.",
+  "The expert in anything was once a beginner.",
+  "Practice isn't the thing you do once you're good. It's what makes you good.",
+  "Loading your next career milestone...",
+];
+
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
   const seconds = (totalSeconds % 60).toString().padStart(2, '0');
@@ -46,9 +57,10 @@ export default function InterviewRoom() {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [startError, setStartError] = useState(null);
   const [evaluationError, setEvaluationError] = useState(null);
-  const [interviewerAudioAnalyser, setInterviewerAudioAnalyser] = useState(null);
+  const [isInterviewerAudioAnalyser, setInterviewerAudioAnalyser] = useState(null);
   const [isInterviewerSpeaking, setIsInterviewerSpeaking] = useState(false);
   const [isInterviewerListening, setIsInterviewerListening] = useState(false);
+  const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
 
   const interviewConfig = useMemo(
     () => ({ ...DEFAULT_INTERVIEW_CONFIG, ...(location.state?.interviewConfig || {}) }),
@@ -85,6 +97,15 @@ export default function InterviewRoom() {
   useEffect(() => {
     startInterview(true);
   }, [startInterview]);
+
+  // Rotate loading phrases while preparing first question
+  useEffect(() => {
+    if (!isStarting) return undefined;
+    const interval = setInterval(() => {
+      setLoadingPhraseIndex((prev) => (prev + 1) % LOADING_PHRASES.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [isStarting]);
 
   useEffect(() => {
     if (summary) return undefined;
@@ -204,9 +225,11 @@ export default function InterviewRoom() {
           {summary ? (
             <InterviewSummary summary={summary} onDone={() => navigate('/dashboard')} />
           ) : isStarting ? (
-            <div className="motion-safe:animate-fade-in">
+            <div className="motion-safe:animate-fade-in flex flex-col items-center text-center">
               <Loader2 className="h-6 w-6 animate-spin text-zinc-500" />
-              <p className="mt-4 text-sm text-zinc-400">Preparing your first interview question...</p>
+              <p key={loadingPhraseIndex} className="mt-4 text-sm text-zinc-400 motion-safe:animate-fade-in">
+                {LOADING_PHRASES[loadingPhraseIndex]}
+              </p>
             </div>
           ) : startError ? (
             <div className="motion-safe:animate-fade-in">
