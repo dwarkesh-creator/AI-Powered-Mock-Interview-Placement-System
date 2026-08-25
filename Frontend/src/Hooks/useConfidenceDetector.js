@@ -146,7 +146,11 @@ export default function useConfidenceDetector(videoRef, isActive) {
       try {
         const vision = await FilesetResolver.forVisionTasks(WASM_ROOT);
         landmarker = await FaceLandmarker.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: MODEL_ASSET_URL },
+          // GPU initialisation is not available in every browser/driver
+          // combination.  The confidence estimate samples only a few frames
+          // per second, so the CPU delegate is fast enough and much more
+          // reliable for local development.
+          baseOptions: { modelAssetPath: MODEL_ASSET_URL, delegate: 'CPU' },
           runningMode: 'VIDEO',
           numFaces: 1,
           outputFaceBlendshapes: true,

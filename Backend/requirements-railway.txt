@@ -12,7 +12,7 @@ scikit-learn>=1.4.0
 # ── Vision (Ai_Module/vision) ─────────────────────────────────────────────────
 opencv-python-headless>=4.9.0
 numpy>=1.26.0
-tensorflow-cpu>=2.16.0
+tensorflow-cpu>=2.16.0,<2.20
 
 # ── LLM providers (optional — set API keys in environment) ────────────────────
 google-genai>=1.0.0

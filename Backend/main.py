@@ -118,11 +118,33 @@ try:
 except ImportError:
     generate_feedback = None
 
-try:
-    from Ai_Module.vision.vision_analyzer import VisionAnalyzer  # type: ignore  # noqa: E402
-    vision_analyzer = VisionAnalyzer()
-except Exception:
-    vision_analyzer = None
+# Do not import TensorFlow or initialise the TFLite model while Uvicorn is
+# importing this module.  That work can take longer than a platform health
+# check (and prevents /docs from opening even though vision is optional).
+# Load it only for the endpoint that actually needs it.
+vision_analyzer: Any = None
+_vision_analyzer_load_attempted = False
+
+
+def _get_vision_analyzer() -> Any:
+    """Return the optional vision analyzer, loading it on first use."""
+    global vision_analyzer, _vision_analyzer_load_attempted
+
+    if vision_analyzer is not None:
+        return vision_analyzer
+    if _vision_analyzer_load_attempted:
+        return None
+
+    _vision_analyzer_load_attempted = True
+    try:
+        from Ai_Module.vision.vision_analyzer import VisionAnalyzer  # type: ignore  # noqa: E402
+
+        vision_analyzer = VisionAnalyzer()
+    except Exception as exc:
+        warnings.warn(f"Vision analyzer unavailable: {exc}", RuntimeWarning)
+        return None
+
+    return vision_analyzer
 
 try:
     import numpy as np  # type: ignore
@@ -545,7 +567,8 @@ async def vision_analyze_endpoint(file: Optional[UploadFile] = None):
     to an OpenCV BGR image, runs a single-frame analysis and returns the
     summarized session result as JSON.
     """
-    if vision_analyzer is None:
+    analyzer = _get_vision_analyzer()
+    if analyzer is None:
         raise HTTPException(status_code=503, detail="Vision analyzer unavailable")
 
     if file is None:
@@ -561,8 +584,8 @@ async def vision_analyze_endpoint(file: Optional[UploadFile] = None):
         raise HTTPException(status_code=400, detail="Invalid image file")
 
     # analyze the frame and return a session summary
-    _ = vision_analyzer.analyze_frame(img)
-    summary = vision_analyzer.summarize_session()
+    _ = analyzer.analyze_frame(img)
+    summary = analyzer.summarize_session()
     from dataclasses import asdict
 
     return asdict(summary)
